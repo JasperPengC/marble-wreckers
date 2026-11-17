@@ -41,7 +41,7 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
     );
   const children: Array<Node | null> = [
     h("div", { class: "logo overlay__title" }, t("title")),
-    h("div", { class: "logo-sub" }, "MARBLE DEMOLITION"),
+    h("div", { class: "logo-sub" }, "MARBLE WRECKERS"),
     h(
       "div",
       { class: "records" },

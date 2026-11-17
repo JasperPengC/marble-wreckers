@@ -1,6 +1,6 @@
 {
   "zh_CN": {
-    "title": "拆楼弹珠",
+    "title": "弹珠拆迁队",
     "subtitle": "瞄准、发射,把灌水巨楼一层层轰塌",
     "hud.score": "热度",
     "hud.coins": "灵石",
@@ -84,7 +84,7 @@
     "settings.resetConfirm": "再点一次确认重置",
     "settings.resetDone": "进度已重置",
     "settings.about": "关于",
-    "settings.aboutText": "拆楼弹珠 v1.0 · 纯单机，无网络请求；仅申请道号、主题、本地存储 4 项权限。存档保存在社区本地存储。",
+    "settings.aboutText": "弹珠拆迁队 v1.0 · 纯单机，无网络请求；仅申请道号、主题、本地存储 4 项权限。存档保存在社区本地存储。",
     "scene.foot": "←→ 选择 · Enter 确认 · Esc 返回",
     "skills.meta": "四大分类",
     "draft.foot": "点击卡片或 ←→ + Enter 选择",
@@ -129,7 +129,7 @@
     "side.noRelics": "打掉 Boss 才有"
   },
   "en": {
-    "title": "Tower Demolition",
+    "title": "Marble Wreckers",
     "subtitle": "Aim, fire, and flatten the spam towers",
     "hud.score": "Heat",
     "hud.coins": "Gems",
@@ -213,7 +213,7 @@
     "settings.resetConfirm": "Tap again to confirm",
     "settings.resetDone": "Progress reset",
     "settings.about": "About",
-    "settings.aboutText": "Marble Demolition v1.0 · fully offline, no network requests; 4 permissions only (user, theme, storage).",
+    "settings.aboutText": "Marble Wreckers v1.0 · fully offline, no network requests; 4 permissions only (user, theme, storage).",
     "scene.foot": "←→ select · Enter confirm · Esc back",
     "skills.meta": "4 families",
     "draft.foot": "Tap a card, or ←→ + Enter",
