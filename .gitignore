@@ -16,3 +16,4 @@ docs/superpowers/
 /docs/images/*.webp.json
 /test/e2e/README.md
 /sdk/README.md
+.zcode/
