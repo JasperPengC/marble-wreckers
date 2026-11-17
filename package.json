@@ -1,0 +1,31 @@
+{
+  "name": "@discourse-mini-app/chai-lou-danzhu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --bun vite",
+    "build": "bun run typecheck && bun --bun vite build && bun run scripts/build-h5.ts && bun run scripts/package.ts",
+    "test": "bun test test",
+    "typecheck": "tsc -p tsconfig.json",
+    "build:debug": "MINI_APP_DEBUG=1 bun run build",
+    "e2e": "node test/e2e/run.mjs",
+    "check": "bun run typecheck && bun run arch && bun test test && bun run e2e",
+    "build:h5": "bun run typecheck && bun --bun vite build && bun run scripts/build-h5.ts",
+    "build:miniapp": "bun run typecheck && bun --bun vite build && bun run scripts/package.ts",
+    "preview:h5": "bun --bun vite preview",
+    "arch": "bun run scripts/check-arch.ts"
+  },
+  "dependencies": {
+    "@discourse-mini-app/sdk": "file:./sdk"
+  },
+  "devDependencies": {
+    "vite": "8.3.5",
+    "typescript": "5.9.3",
+    "@types/node": "24.10.0",
+    "@types/bun": "1.4.3"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
+  }
+}

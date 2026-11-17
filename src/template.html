@@ -1,0 +1,72 @@
+<main class="cabinet" id="cabinet">
+  <div class="bezel" id="bezel">
+    <header class="deck deck--top" id="deck-top">
+      <div class="led-strip">
+        <div class="led led--tower">
+          <span class="led__label" id="hud-tower-label">最高楼栋</span>
+          <b id="hud-tower">—</b>
+        </div>
+        <div class="led led--heat">
+          <span class="led__label">热度</span>
+          <b id="hud-score">0</b>
+        </div>
+        <div class="led led--gem">
+          <span class="led__label">灵石</span>
+          <b id="hud-coins">0</b>
+        </div>
+        <div class="led led--shield">
+          <span class="led__label">护盾</span>
+          <b id="hud-shield">—</b>
+        </div>
+        <span class="save-led" id="save-led" title="进度已保存"></span>
+      </div>
+    </header>
+
+    <div class="screen" id="screen">
+      <div class="screen__inner" id="screen-inner">
+        <canvas id="board"></canvas>
+        <div class="boss-bar" id="boss-bar" hidden>
+          <span class="boss-bar__label">镇站巨楼</span>
+          <i class="boss-bar__track"><b id="boss-fill"></b></i>
+        </div>
+        <div class="banner" id="banner" hidden>
+          <b id="banner-title"></b>
+          <span id="banner-sub"></span>
+        </div>
+        <div class="danger" id="danger" hidden>楼要压下来了！</div>
+        <div class="overlay" id="overlay" hidden></div>
+        <p class="notice" id="notice"></p>
+        <div class="screen__glass" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <footer class="deck deck--bottom" id="deck-bottom">
+      <div class="build-bar" id="build-bar" hidden></div>
+      <div class="panel-row">
+        <span class="joystick" aria-hidden="true"><i></i></span>
+        <button id="help" class="round-key round-key--help" data-label="玩法" aria-label="玩法说明"></button>
+        <button id="pause" class="round-key round-key--pause" data-label="暂停" aria-label="暂停" hidden></button>
+        <div class="ticker" aria-hidden="true">
+          <span class="ticker__track">
+            <span id="ticker-text">拆楼弹珠 · 弹跳预算 · 分裂弹道 · 镇站巨楼 · 灵石养成</span><span aria-hidden="true">拆楼弹珠 · 弹跳预算 · 分裂弹道 · 镇站巨楼 · 灵石养成</span>
+          </span>
+        </div>
+        <button id="retreat" class="key-pill" data-text="death.abandon" hidden></button>
+        <span class="ab-keys" aria-hidden="true"><i class="ab-keys__btn ab-keys__btn--a"></i><i class="ab-keys__btn ab-keys__btn--b"></i></span>
+      </div>
+    </footer>
+  </div>
+
+  <aside class="side-panel" id="side-panel">
+    <h2 class="side-panel__title">作战面板</h2>
+    <div class="side-panel__tower" id="side-tower"></div>
+    <div class="side-panel__sub">构筑</div>
+    <div class="build-list" id="build-list"></div>
+    <div class="side-panel__sub">遗物</div>
+    <div class="relic-list" id="relic-list"></div>
+    <div class="side-panel__sub">砖块图例</div>
+    <div class="side-panel__legend" id="side-legend"></div>
+    <div class="side-panel__foot">空格/回车发射 · ←→ 瞄准 · Esc/P 暂停</div>
+    <p class="player" id="player"></p>
+  </aside>
+</main>

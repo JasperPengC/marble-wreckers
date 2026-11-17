@@ -1,0 +1,18 @@
+# 依赖与产物
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# 内部文档：开发记录与提审材料，不随代码开源
+PRODUCT.md
+提审材料.md
+NOTES.md
+TODO.md
+docs/superpowers/
+/ARCHITECTURE.md
+/docs/**/*.md
+/docs/images/*.webp.json
+/test/e2e/README.md
+/sdk/README.md
