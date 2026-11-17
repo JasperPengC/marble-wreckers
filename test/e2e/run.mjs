@@ -1592,7 +1592,8 @@ async function testSceneActions(ctx) {
   assert(await ev("document.querySelector('#overlay .tab--on')?.textContent === '元素'"),
     "技能详情返回后应保留图鉴分类");
   await clickSelector("#overlay .scene__back");
-  await clickOverlayButtonByTokens(["设置", "Settings"]);
+  // 设置是主页右下角的圆形悬浮齿轮（.fab），不在 dock 里。
+  await clickSelector("#overlay .fab--menu");
   await clickSelector("#overlay .seg__opt", 2); // 浅色
   assert(await ev("document.documentElement.dataset.theme === 'light'"), "设置主题应立即生效");
   await ev(`(() => {
@@ -1636,7 +1637,7 @@ async function testSceneActions(ctx) {
     { label: "暂停后的单局存档" });
   assert(withRun.run, "暂停应生成可导入的单局快照");
   await clickOverlayButtonByTokens(["Bank gems", "撤退"]);
-  await clickOverlayButtonByTokens(["Settings", "设置"]);
+  await clickSelector("#overlay .fab--menu");
   await pasteBackup(JSON.stringify(withRun));
   await clickSelector("#overlay .backup-actions .btn", 1);
   await clickSelector("#overlay .scene__back");

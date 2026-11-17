@@ -5923,36 +5923,136 @@ body,
   }
 }
 
-/* 手机中游戏本身就是屏幕：安全区留在面板内部，背景延伸到屏幕边缘。 */
-@media (width < 920px) {
-  .cabinet {
-    padding: 0;
-    align-items: stretch;
+/* 手机中游戏本身就是屏幕：安全区由 .hud-top/.dock 等悬浮层内部消化。 */
+
+/* =========================================================================
+   Fullscreen v12 — immersive mobile layout: bottom dock title screen.
+   Appended last so it wins over every older cabinet/title skin.
+   ========================================================================= */
+
+/* Title screen: content stacks from the top, the dock pins to the bottom. */
+.overlay--title {
+  justify-content: flex-start;
+  gap: 10px;
+  padding-top: calc(var(--safe-area-top) + 24px);
+  padding-inline: calc(var(--safe-area-left) + 16px) calc(var(--safe-area-right) + 16px);
+}
+
+.overlay--title .logo {
+  margin-top: clamp(6px, 4vh, 34px);
+}
+
+.overlay--title .overlay__hint {
+  margin-top: 2px;
+}
+
+/* Resume: compact ghost chip under the start button. */
+.btn--resume {
+  min-height: 38px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  gap: 6px;
+}
+
+.btn--resume svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Bottom dock: icon entries for everything that is not the start button. */
+.dock {
+  margin-top: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  width: min(480px, 100%);
+  padding: 6px 6px calc(6px + var(--safe-area-bottom));
+  border-top: 1px solid var(--panel-border);
+  border-radius: 16px 16px 0 0;
+  background: var(--panel-strong-2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.dock__item {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+  color: var(--primary);
+}
+
+.dock__item:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dock__item .menu-item__medal {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--accent);
+}
+
+.dock__item .menu-item__medal svg {
+  width: 21px;
+  height: 21px;
+}
+
+.dock__item .menu-item__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.78;
+  white-space: nowrap;
+}
+
+:root[data-theme="light"] .dock {
+  box-shadow: 0 -8px 24px rgba(40, 52, 76, 0.14);
+}
+
+:root[data-theme="light"] .dock__item:active {
+  background: rgba(20, 34, 62, 0.06);
+}
+
+:root[data-theme="light"] .dock__item .menu-item__medal {
+  color: #a97f22;
+}
+
+/* Settings gear: circular fab above the dock's right edge. */
+.fab--menu {
+  position: absolute;
+  right: calc(var(--safe-area-right) + 12px);
+  bottom: calc(var(--safe-area-bottom) + 84px);
+}
+
+/* Short landscape: keep the dock usable, drop the vertical spacing. */
+@media (max-height: 520px) {
+  .overlay--title {
+    padding-top: calc(var(--safe-area-top) + 8px);
+    gap: 6px;
   }
 
-  .cabinet::before { display: none; }
-
-  .bezel,
-  :root[data-theme="light"] .bezel {
-    max-width: none;
-    height: 100%;
-    padding-inline: var(--safe-area-left) var(--safe-area-right);
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
+  .overlay--title .logo {
+    margin-top: 0;
+    font-size: clamp(24px, 6vh, 34px);
   }
 
-  .deck--top {
-    padding-top: calc(8px + var(--safe-area-top));
-  }
-
-  .deck--bottom,
-  :root[data-theme="light"] .deck--bottom {
-    padding-bottom: calc(12px + var(--safe-area-bottom));
-  }
-
-  .screen {
-    display: flex;
-    flex: 1 1 0;
+  .dock__item {
+    min-height: 44px;
   }
 }
