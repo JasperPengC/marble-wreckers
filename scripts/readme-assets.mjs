@@ -67,28 +67,28 @@ function compose(theme, { battle, draft }) {
   return `<!doctype html><html lang="zh-CN"><meta charset="utf-8">
   <style>
     * { box-sizing: border-box; }
-    html, body { margin: 0; width: 1000px; height: 850px; overflow: hidden; background: ${dark ? "#0d1117" : "#ffffff"}; }
+    html, body { margin: 0; width: 1000px; height: 850px; overflow: hidden; background: transparent; }
     body { position: relative; font-family: 'PingFang SC', sans-serif; color: ${ink}; }
-    .phone { position: absolute; width: 290px; height: 640px; padding: 7px; border-radius: 48px;
-      background: linear-gradient(100deg, #9ba0a6, #40454a 2%, #c6c9cc 4%, #22272b 5%, #4b5055 96%, #a5aaad 98%, #555b60);
-      box-shadow: 0 34px 46px -14px ${dark ? "#000a" : "#17223438"}, inset 0 0 0 1px #d3d6d9; }
-    .phone--battle { left: 166px; top: 42px; transform: rotate(-5deg); z-index: 2; }
-    .phone--draft { left: 548px; top: 76px; transform: rotate(5deg); }
+    .phone { position: absolute; width: 300px; padding: 8px; border-radius: 48px;
+      background: #30353a;
+      box-shadow: 0 24px 36px -14px ${dark ? "#000a" : "#17223438"}, inset 0 0 0 1px #969da3; }
+    .phone--battle { left: 150px; top: 38px; }
+    .phone--draft { left: 550px; top: 38px; }
     .phone::before, .phone::after { content: ''; position: absolute; width: 3px; border-radius: 2px; background: #777d82; }
     .phone::before { left: -2px; top: 144px; height: 74px; }
     .phone::after { right: -2px; top: 180px; height: 58px; }
-    .display { height: 100%; position: relative; border: 4px solid #050608; border-radius: 42px; overflow: hidden; background: #080b11; }
+    .display { position: relative; aspect-ratio: 390 / 900; border-radius: 40px; overflow: hidden; background: #080b11; }
     .status { height: 46px; position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 19px; color: ${dark ? '#f1f3f5' : '#1d2530'}; }
     .time { font: 600 11px -apple-system, sans-serif; }
     .island { position: absolute; width: 82px; height: 25px; border-radius: 20px; left: 50%; top: 8px; transform: translateX(-50%); background: #000; }
     .lens { position: absolute; right: 9px; top: 9px; width: 7px; height: 7px; background: radial-gradient(circle at 40% 35%, #26374b, #0e141d 70%); border-radius: 50%; }
     .status svg { width: 42px; height: 12px; }
-    .game { display: block; width: 100%; height: 100%; }
+    .game { display: block; width: 100%; height: auto; }
     .home { height: 28px; position: absolute; bottom: 0; left: 0; right: 0; }
     .home::after { content: ''; position: absolute; height: 4px; width: 92px; border-radius: 3px; background: ${dark ? '#e7e9ec' : '#1d2530'}; top: 14px; left: 50%; transform: translateX(-50%); }
-    .caption { position: absolute; bottom: 40px; width: 330px; text-align: center; font-size: 17px; line-height: 1.7; letter-spacing: .03em; }
-    .caption--battle { left: 145px; }
-    .caption--draft { left: 529px; }
+    .caption { position: absolute; bottom: 44px; width: 340px; text-align: center; font-size: 17px; line-height: 1.7; letter-spacing: .03em; }
+    .caption--battle { left: 130px; }
+    .caption--draft { left: 530px; }
     .caption strong { display: block; color: ${dark ? "#f1d393" : "#7c5717"}; font-size: 19px; font-weight: 600; }
     .caption span { font-size: 13px; color: ${dark ? "#8f9baa" : "#6d7682"}; }
   </style>
@@ -152,11 +152,31 @@ try {
   await client.send("Emulation.setDeviceMetricsOverride", {
     width: 1000, height: 850, deviceScaleFactor: 2, mobile: false,
   });
+  await client.send("Emulation.setDefaultBackgroundColorOverride", {
+    color: { r: 0, g: 0, b: 0, a: 0 },
+  });
   for (const theme of ["dark", "light"]) {
     const html = path.join(temporary, `hero-${theme}.html`);
     await fs.writeFile(html, compose(theme, screenshots[theme]));
     await client.send("Page.navigate", { url: new URL(`file://${html}`).href });
     await waitFor("document.images.length === 2 && [...document.images].every(image => image.complete && image.naturalWidth > 0)");
+    const geometry = await client.evaluate(`(() => ({
+      phones: [...document.querySelectorAll('.phone')].map(phone => ({
+        transform: getComputedStyle(phone).transform,
+        top: phone.getBoundingClientRect().top,
+        height: phone.getBoundingClientRect().height,
+      })),
+      images: [...document.images].map(image => ({
+        natural: image.naturalWidth / image.naturalHeight,
+        rendered: image.getBoundingClientRect().width / image.getBoundingClientRect().height,
+      })),
+    }))()`);
+    if (geometry.phones.some(phone => phone.transform !== 'none') ||
+        geometry.phones[0].top !== geometry.phones[1].top ||
+        geometry.phones[0].height !== geometry.phones[1].height ||
+        geometry.images.some(image => Math.abs(image.natural - image.rendered) > 0.0001)) {
+      throw new Error(`手机机框或截图比例不一致：${JSON.stringify(geometry)}`);
+    }
     const { data } = await client.send("Page.captureScreenshot", { format: "webp", quality: 90 });
     const file = path.join(output, `hero-${theme}.webp`);
     await fs.writeFile(file, withProvenance(Buffer.from(data, "base64"), theme));
