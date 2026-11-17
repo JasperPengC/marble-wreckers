@@ -22,7 +22,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.webp">
     <source media="(prefers-color-scheme: light)" srcset="docs/images/hero-light.webp">
-    <img src="docs/images/hero-light.webp" width="720" alt="弹珠拆迁队实机画面：左侧为多线弹珠拆楼，右侧为三选一强化。">
+    <img src="docs/images/hero-light.webp" width="720" alt="弹珠拆迁队实机画面：左侧为全屏弹珠拆楼与悬浮徽章，右侧为三选一强化。">
   </picture>
 </p>
 
@@ -34,6 +34,7 @@
 - **局内构筑**：19 种可叠加强化，包括分身、多线弹道、穿透、暴击和毒火效果；每过一栋三选一，也能花灵石重抽。
 - **Boss 与遗物**：每五栋挑战一次带双层护甲的 Boss，击败后可选择带有副作用的遗物。
 - **长期进度**：灵石可购买永久升级，成就和纪录自动保存；每日挑战使用当天的固定种子。
+- **全屏沉浸 HUD**：游戏画面铺满整个屏幕，资源数字悬浮成小图标徽章；主页功能收进底部 Dock，暂停/玩法是角落圆形悬浮钮，构筑信息由右下角圆钮展开。
 - **手机与桌面适配**：触摸、鼠标和键盘操作，宽屏作战面板，明暗主题、合成音效与减少动效设置。
 
 ## 快速开始
@@ -53,7 +54,8 @@ bun run dev
 | --- | --- | --- |
 | 瞄准 | 按住画面拖动 | `←` / `→` |
 | 发射 | 松开 | `Space` / `Enter` |
-| 暂停 | 点击暂停按钮 | `Esc` / `P` |
+| 暂停 | 右上角悬浮按钮 | `Esc` / `P` |
+| 查看构筑 | 右下角构筑圆钮 | — |
 
 进度保存在当前浏览器中，关闭后可以继续。换浏览器或域名前，请先在设置里导出存档。
 

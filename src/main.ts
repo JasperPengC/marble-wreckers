@@ -333,8 +333,9 @@ function announceTower(): void {
 
 function updateHUD(): void {
   hud.updateHUD(buildHudModel(run, meta, t));
-  const towerLabel = document.getElementById("hud-tower-label");
-  if (towerLabel) towerLabel.textContent = t(run ? "hud.towerNow" : "hud.towerBest");
+  // 楼栋徽章的悬浮提示随局内/局外切换（图标化徽章没有文字标签）。
+  const towerChip = document.querySelector<HTMLElement>(".hud-chip--tower");
+  if (towerChip) towerChip.title = t(run ? "hud.towerNow" : "hud.towerBest");
 }
 
 function updateBuild(): void {
