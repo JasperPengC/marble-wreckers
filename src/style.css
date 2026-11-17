@@ -64,106 +64,158 @@ body {
   overscroll-behavior: none;
 }
 
-/* ---------------------------------------------------------------- cabinet */
+/* -------------------------------------------------------- fullscreen stage */
 
-.cabinet {
-  position: relative;
-  height: 100dvh;
+.app {
+  position: fixed;
+  inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  padding:
-    max(6px, env(safe-area-inset-top))
-    max(6px, env(safe-area-inset-right))
-    max(6px, env(safe-area-inset-bottom))
-    max(6px, env(safe-area-inset-left));
+  background: var(--page-bg);
 }
 
-.cabinet::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(720px, 92vw);
-  height: min(720px, 82vh);
-  border-radius: 50%;
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    rgba(70, 96, 160, 0.18) 0%,
-    rgba(40, 54, 90, 0.08) 45%,
-    transparent 72%
-  );
-  filter: blur(6px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.bezel {
+/* The stage owns the fullscreen canvas and every floating HUD layer. */
+.stage {
   position: relative;
-  z-index: 1;
-  flex: 0 0 auto;
-  width: 100%;
-  max-width: 460px;
+  flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--cab-edge);
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 12%),
-    linear-gradient(180deg, #1b2331 0%, #101623 34%, #0a0f19 72%, #06090f 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.6),
-    0 18px 50px rgba(0, 0, 0, 0.65);
+  min-height: 0;
   overflow: hidden;
 }
 
-/* Cabinet screws: four small metal studs on the bezel corners. */
-.bezel::before,
-.bezel::after {
-  content: "";
+#board {
   position: absolute;
-  z-index: 4;
-  width: 42px;
-  height: 42px;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 7px 7px, rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px),
-    radial-gradient(circle at calc(100% - 7px) 7px, rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px),
-    radial-gradient(circle at 7px calc(100% - 7px), rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px),
-    radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
 }
 
-.bezel::before {
+/* --------------------------------------------------------- floating HUD */
+
+.hud-top {
+  position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  z-index: 9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(var(--safe-area-top) + 10px) calc(var(--safe-area-right) + 10px) 0
+    calc(var(--safe-area-left) + 10px);
+  pointer-events: none;
 }
 
-.bezel::after {
-  bottom: 0;
-  right: 0;
+/* A scene panel owns the whole stage while open: tuck the resource chips away
+   so they cannot cover its back button (the fabs stay reachable top-right). */
+.overlay:not(.overlay--title) ~ .hud-top .hud-chips {
+  visibility: hidden;
+}
+
+.hud-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.hud-chip {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.hud-chip__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  opacity: 0.6;
+}
+
+.hud-chip b {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+
+.hud-chip--heat b { color: var(--led-amber); }
+.hud-chip--gem b {
+  color: var(--led-cyan);
+  text-shadow: 0 0 8px rgba(106, 212, 255, 0.35);
+}
+.hud-chip--shield b { color: #cfe6ff; }
+
+:root[data-theme="light"] .hud-chip {
+  box-shadow: 0 4px 14px rgba(40, 52, 76, 0.18);
+}
+:root[data-theme="light"] .hud-chip--gem b { text-shadow: none; }
+:root[data-theme="light"] .hud-chip--shield b { color: #2c5a86; }
+
+.hud-actions {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* Circular floating icon button (pause / help / settings). */
+.fab {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-2);
+  color: var(--primary);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+
+.fab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.fab:active {
+  transform: scale(0.94);
+}
+
+.fab[hidden] {
+  display: none;
+}
+
+:root[data-theme="light"] .fab {
+  box-shadow: 0 4px 14px rgba(40, 52, 76, 0.18);
 }
 
 @media (min-width: 920px) {
-  .cabinet {
-    align-items: center;
-    gap: 26px;
-    padding-block: 18px;
-  }
-
-  .bezel {
-    flex: 0 0 auto;
-    width: 500px;
-    max-width: 520px;
-  }
-
   .side-panel {
     display: block !important;
+    position: relative;
+    flex: 0 0 320px;
     width: 320px;
-    max-height: calc(100dvh - 36px);
+    max-height: none;
+    height: 100%;
     overflow-y: auto;
   }
 }
@@ -415,7 +467,7 @@ body {
 
 .boss-bar {
   position: absolute;
-  top: 8px;
+  top: calc(var(--safe-area-top) + 56px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -461,7 +513,7 @@ body {
 
 .danger {
   position: absolute;
-  top: 10px;
+  top: calc(var(--safe-area-top) + 98px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 6;
@@ -554,6 +606,11 @@ body {
 /* --------------------------------------------------------------- build bar */
 
 .build-bar {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: calc(var(--safe-area-bottom) + 12px);
+  z-index: 9;
   display: flex;
   gap: 6px;
   overflow-x: auto;
@@ -1577,7 +1634,7 @@ body {
 .notice {
   position: absolute;
   left: 50%;
-  bottom: 4px;
+  bottom: calc(var(--safe-area-bottom) + 12px);
   transform: translateX(-50%);
   margin: 0;
   font-size: 11px;

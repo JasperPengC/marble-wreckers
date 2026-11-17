@@ -60,7 +60,6 @@ type TemplateElements = {
   notice: HTMLElement;
   player: HTMLElement;
   board: HTMLCanvasElement;
-  retreat: HTMLButtonElement;
   pause: HTMLButtonElement;
   help: HTMLButtonElement;
   danger: HTMLElement;
@@ -69,12 +68,6 @@ type TemplateElements = {
   "banner-sub": HTMLElement;
   "boss-bar": HTMLElement;
   "boss-fill": HTMLElement;
-  screen: HTMLElement;
-  "screen-inner": HTMLElement;
-  cabinet: HTMLElement;
-  bezel: HTMLElement;
-  "deck-top": HTMLElement;
-  "deck-bottom": HTMLElement;
   "build-bar": HTMLElement;
   "build-list": HTMLElement;
   "side-tower": HTMLElement;
@@ -339,7 +332,7 @@ function announceTower(): void {
 function updateHUD(): void {
   hud.updateHUD(buildHudModel(run, meta, t));
   const towerLabel = document.getElementById("hud-tower-label");
-  if (towerLabel) towerLabel.textContent = run ? "当前楼栋" : "最高楼栋";
+  if (towerLabel) towerLabel.textContent = t(run ? "hud.towerNow" : "hud.towerBest");
 }
 
 function updateBuildBar(): void {
@@ -347,7 +340,6 @@ function updateBuildBar(): void {
 }
 
 function setRunChrome(active: boolean): void {
-  element("retreat").hidden = !active;
   element("pause").hidden = !active;
   if (!active) element("danger").hidden = true;
 }
@@ -653,10 +645,6 @@ window.addEventListener("keydown", (event) => {
 window.addEventListener("keyup", (event) => {
   if (event.code === "ArrowLeft" || event.code === "KeyA") keys.left = false;
   if (event.code === "ArrowRight" || event.code === "KeyD") keys.right = false;
-});
-
-element("retreat").addEventListener("click", () => {
-  if (run) pause();
 });
 
 element("help").addEventListener("click", () => {
@@ -1169,8 +1157,6 @@ function hydrateIcons(): void {
     if (!button.querySelector("svg")) button.append(icon(iconName));
     button.setAttribute("aria-label", label);
   }
-  const retreat = element("retreat");
-  if (!retreat.querySelector("svg")) retreat.prepend(icon("flag"));
 }
 
 function localizeAndStart(): void {

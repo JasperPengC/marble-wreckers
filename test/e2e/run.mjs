@@ -1083,25 +1083,25 @@ async function testMenus(ctx) {
   await clickSelector("#overlay .btn--primary");
   await waitPhase("aim", { timeout: 8000, label: "点击开始后进入瞄准阶段" });
 
-  // 局内 →「带灵石撤退」→ 暂停面板 →「结算并按灵石撤退」→ 菜单
-  await clickSelector("#retreat");
+  // 局内 → 悬浮「暂停」→ 暂停面板 →「结算并按灵石撤退」→ 菜单
+  await clickSelector("#pause");
   const pausePanel = await waitFor(
     async () => {
       const state = await overlayState();
       return !state.hidden && state.title.length > 0 ? state : null;
     },
-    { timeout: 8000, label: "点撤退后出现暂停面板" }
+    { timeout: 8000, label: "点暂停后出现暂停面板" }
   );
   assert(
     ["暂停", "Paused"].some((token) => pausePanel.title.includes(token)),
-    `点「带灵石撤退」应打开暂停面板，实际标题: "${pausePanel.title}"`
+    `点「暂停」应打开暂停面板，实际标题: "${pausePanel.title}"`
   );
   const pauseRetreat = pausePanel.buttons.find(
     (button) => button.text.includes("结算") || button.text.includes("Bank")
   );
   assert(pauseRetreat, `暂停面板缺少「结算并按灵石撤退」: ${pausePanel.buttons.map((b) => b.text).join(" | ")}`);
   ctx.note(
-    `撤退入口: #retreat → 暂停面板「${pausePanel.title}」，按钮 ${pausePanel.buttons.map((b) => b.text).join(" | ")}`
+    `撤退入口: #pause → 暂停面板「${pausePanel.title}」，按钮 ${pausePanel.buttons.map((b) => b.text).join(" | ")}`
   );
   await clickOverlayButtonByTokens(["结算", "撤退", "Bank", "quit", "Retreat"], {
     fromEnd: 0,
@@ -1294,12 +1294,12 @@ async function testPause(ctx) {
     { timeout: 8000, label: "暂停中撤退后回到菜单" }
   );
   const chromeHidden = await ev(
-    "({ pauseHidden: document.getElementById('pause')?.hidden === true, retreatHidden: document.getElementById('retreat')?.hidden === true })"
+    "({ pauseHidden: document.getElementById('pause')?.hidden === true, retreatGone: document.getElementById('retreat') === null })"
   );
   const notice = String((await ev("(document.getElementById('notice') || {}).textContent || ''"))).trim();
   assert(
-    chromeHidden.pauseHidden && chromeHidden.retreatHidden,
-    `回到菜单后暂停/撤退按钮应隐藏，实际: ${brief(chromeHidden)}`
+    chromeHidden.pauseHidden && chromeHidden.retreatGone,
+    `回到菜单后暂停按钮应隐藏、场内撤退按钮应不存在，实际: ${brief(chromeHidden)}`
   );
   ctx.note(
     `暂停撤退 → 菜单: "${menu.overlay.title}"，按钮 ${menu.overlay.buttons.length} 个，通知="${notice}"（入口 ${retreatEntry.how}）`
@@ -1453,14 +1453,14 @@ async function testGameUI(ctx) {
   const afterSkill = await dbg();
   assert(afterSkill.phase === "aim", `关闭技能详情后应回到对局(aim)，实际 ${afterSkill.phase}`);
   const chromeAfterSkill = await ev(
-    "({ pauseVisible: document.getElementById('pause').hidden === false, retreatVisible: document.getElementById('retreat').hidden === false })"
+    "({ pauseVisible: document.getElementById('pause').hidden === false })"
   );
   assert(
-    chromeAfterSkill.pauseVisible && chromeAfterSkill.retreatVisible,
-    `关闭技能详情后暂停/撤退按钮应恢复可见: ${brief(chromeAfterSkill)}`
+    chromeAfterSkill.pauseVisible,
+    `关闭技能详情后暂停按钮应恢复可见: ${brief(chromeAfterSkill)}`
   );
   ctx.note(
-    `「继续游戏」关闭技能详情: overlay 隐藏，phase=${afterSkill.phase}，暂停/撤退按钮恢复可见`
+    `「继续游戏」关闭技能详情: overlay 隐藏，phase=${afterSkill.phase}，暂停按钮恢复可见`
   );
 
   // d) 响应式：#side-panel 手机 390x844 隐藏，桌面 1280x900 可见
