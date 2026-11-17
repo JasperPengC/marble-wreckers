@@ -254,76 +254,21 @@ const hud = createHudView({
  */
 function syncCanvasSize(): void {
   const rect = canvas.getBoundingClientRect();
-  if (rect.width < 1) return;
+  if (rect.width < 1 || rect.height < 1) return;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
   const width = Math.max(1, Math.round(rect.width * dpr));
-  // Backing store follows the logical 400x660 aspect exactly. Deriving the
-  // height from the CSS box instead leaves an unpainted strip at the bottom
-  // (the renderer maps one logical unit to one device pixel on both axes).
-  const height = Math.max(1, Math.round((width * H) / W));
+  const height = Math.max(1, Math.round(rect.height * dpr));
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
   }
 }
 /**
- * Fit the 400x660 playfield inside whatever deck space the cabinet leaves,
- * letterboxing the screen instead of distorting it.
+ * The canvas is fullscreen (CSS pins it to the viewport), so its backing store
+ * just follows resize events — no more letterbox math against the cabinet.
  */
-function fitScreen(): void {
-  const viewportW = document.documentElement.clientWidth;
-  const viewportH = window.innerHeight;
-  if (viewportW < 2 || viewportH < 2) return;
-  const inner = element("screen-inner");
-  const screen = element("screen");
-  const bezel = element("bezel");
-  const cabinet = element("cabinet");
-  const cabinetStyle = getComputedStyle(cabinet);
-  const bezelStyle = getComputedStyle(bezel);
-  const ratio = W / H;
-  const maxBezelH = cabinet.clientHeight -
-    parseFloat(cabinetStyle.paddingTop) - parseFloat(cabinetStyle.paddingBottom) -
-    parseFloat(bezelStyle.borderTopWidth) - parseFloat(bezelStyle.borderBottomWidth);
-  const deckH =
-    element("deck-top").getBoundingClientRect().height +
-    element("deck-bottom").getBoundingClientRect().height;
-
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
-  const apply = (height: number): void => {
-    // Derive width from height, then snap the CSS height onto whole device
-    // pixels of the exact 400:660 ratio, so the backing store and the CSS box
-    // agree to the pixel on every DPR (fixed a 3px mobile mismatch).
-    const width = Math.floor(height * ratio);
-    height = Math.round((width * H) / W * dpr) / dpr;
-    const nextW = width + "px";
-    const nextH = height.toFixed(3) + "px";
-    if (inner.style.width !== nextW || inner.style.height !== nextH) {
-      inner.style.width = nextW;
-      inner.style.height = nextH;
-    }
-    const nextScreenH = height.toFixed(3) + "px";
-    if (screen.style.height !== nextScreenH) screen.style.height = nextScreenH;
-  };
-
-  // First pass: fit the CRT in the measured screen box (excludes padding).
-  const availW = Math.max(80, element("screen").clientWidth);
-  const availH = Math.max(120, maxBezelH - deckH);
-  let height = availW / ratio;
-  if (height > availH) height = availH;
-  apply(Math.floor(height));
-
-  // Correction passes: decks can grow after the first measure (fonts, wraps,
-  // build bar appearing). Shrink until the whole cabinet fits the viewport.
-  for (let i = 0; i < 4; i++) {
-    const totalH =
-      element("deck-top").getBoundingClientRect().height +
-      element("screen").getBoundingClientRect().height +
-      element("deck-bottom").getBoundingClientRect().height;
-    const overflow = totalH - maxBezelH;
-    if (overflow <= 1) break;
-    height = Math.max(120, height - overflow);
-    apply(Math.floor(height));
-  }
+function refitCanvas(): void {
+  lastDpr = window.devicePixelRatio || 1;
   syncCanvasSize();
 }
 
@@ -647,8 +592,11 @@ function showDeath(
 
 function pointerAngle(event: PointerEvent): number {
   const rect = canvas.getBoundingClientRect();
-  const px = ((event.clientX - rect.left) / rect.width) * W;
-  const py = ((event.clientY - rect.top) / rect.height) * H;
+  // The field floats centred inside the fullscreen canvas: undo the field
+  // origin (device px) before normalising into logical playfield coordinates.
+  const view = renderer.view();
+  const px = ((event.clientX - rect.left) * lastDpr - view.ox) / view.scale;
+  const py = ((event.clientY - rect.top) * lastDpr - view.oy) / view.scale;
   const dx = px - W / 2;
   const dy = py - CANNON_Y;
   return Math.atan2(dx, -dy);
@@ -952,12 +900,16 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("pagehide", () => persistAll(true));
 window.addEventListener("beforeunload", () => persistAll(true));
+// Fullscreen canvas: the CSS box tracks the viewport, so the backing store
+// follows resize events (browser zoom, rotation, mobile URL-bar collapse).
+window.addEventListener("resize", refitCanvas);
+window.addEventListener("orientationchange", refitCanvas);
+window.visualViewport?.addEventListener("resize", refitCanvas);
 
 // ---------------------------------------------------------------------------
 // Loop
 
 let last = performance.now();
-let fitTick = 0;
 let autosaveT = 0;
 function loop(now: number): void {
   requestAnimationFrame(loop);
@@ -967,14 +919,6 @@ function loop(now: number): void {
   perfBuf[perfIdx++ % perfBuf.length] = rawDt;
   perfFrames++;
   try {
-    // Device pixel ratio can change (browser zoom, screen moves, DPI change).
-    if ((window.devicePixelRatio || 1) !== lastDpr) {
-      lastDpr = window.devicePixelRatio || 1;
-      fitScreen();
-    }
-    // The cabinet layout can settle a few frames after mount (fonts, HMR,
-    // viewport switches): keep the CRT opening fitted.
-    if (++fitTick % 20 === 0) fitScreen();
     if (paused) return;
     // Autosave: cheap, throttled, and independent of tab lifecycle events.
     if (run) {
@@ -1231,7 +1175,7 @@ function hydrateIcons(): void {
 
 function localizeAndStart(): void {
   hydrateIcons();
-  fitScreen();
+  refitCanvas();
   localize();
   updateHUD();
   showMenu();
