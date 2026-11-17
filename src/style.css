@@ -5966,20 +5966,117 @@ body,
    Appended last so it wins over every older cabinet/title skin.
    ========================================================================= */
 
-/* Title screen: content stacks from the top, the dock pins to the bottom. */
+/* Title screen: logo up top, controls float in the lower half, dock pins the
+   bottom — the standard mobile-game title rhythm. */
 .overlay--title {
   justify-content: flex-start;
-  gap: 10px;
-  padding-top: calc(var(--safe-area-top) + 24px);
-  padding-inline: calc(var(--safe-area-left) + 16px) calc(var(--safe-area-right) + 16px);
+  gap: 12px;
+  padding-top: calc(var(--safe-area-top) + 12px);
+  padding-inline: calc(var(--safe-area-left) + 20px) calc(var(--safe-area-right) + 20px);
 }
 
+/* The floating chips row (~safe-top + 44px) sits above the overlay;
+   keep the logo clear of it. */
 .overlay--title .logo {
-  margin-top: clamp(6px, 4vh, 34px);
+  margin-top: clamp(20px, 7vh, 64px);
+}
+
+.overlay--title .logo-sub {
+  margin-top: 10px;
+}
+
+/* Two auto margins split the leftover height around the control group, so it
+   floats in the lower half instead of hugging the logo. */
+.overlay--title .records {
+  margin-top: auto;
 }
 
 .overlay--title .overlay__hint {
-  margin-top: 2px;
+  margin-bottom: 14px;
+}
+
+/* Records: four small frosted stat cards in one row (was a 2x2 plate). */
+.overlay--title .records {
+  display: flex;
+  gap: 8px;
+  width: min(430px, 100%);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.records__cell {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.records__cell .records__label {
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  opacity: 0.62;
+  white-space: nowrap;
+}
+
+.records__cell b {
+  font-size: 16px;
+}
+
+:root[data-theme="light"] .records__cell {
+  box-shadow: 0 4px 14px rgba(40, 52, 76, 0.16);
+}
+
+/* Start: a confident pill; the coin caption wraps to a line under the label. */
+.overlay--title .btn--start {
+  width: min(300px, 82%);
+  min-height: 58px;
+  border-radius: 999px;
+  clip-path: none;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding: 11px 18px 8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 6px 22px rgba(224, 182, 76, 0.42),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.overlay--title .btn-start__label {
+  font-size: 16.5px;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+}
+
+.overlay--title .btn-start__coin {
+  position: static;
+  flex-basis: 100%;
+  font-size: 7.5px;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  opacity: 0.85;
+}
+
+/* Light theme: a translucent veil so the attract skyline stays visible. */
+:root[data-theme="light"] .overlay--title {
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(255, 214, 140, 0.14), transparent 62%),
+    linear-gradient(180deg, rgba(243, 242, 246, 0.38) 0%, rgba(233, 234, 242, 0.55) 48%, rgba(222, 226, 238, 0.82) 100%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 /* Resume: compact ghost chip under the start button. */
