@@ -64,106 +64,168 @@ body {
   overscroll-behavior: none;
 }
 
-/* ---------------------------------------------------------------- cabinet */
+/* -------------------------------------------------------- fullscreen stage */
 
-.cabinet {
-  position: relative;
-  height: 100dvh;
+.app {
+  position: fixed;
+  inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  padding:
-    max(6px, env(safe-area-inset-top))
-    max(6px, env(safe-area-inset-right))
-    max(6px, env(safe-area-inset-bottom))
-    max(6px, env(safe-area-inset-left));
+  background: var(--page-bg);
 }
 
-.cabinet::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(720px, 92vw);
-  height: min(720px, 82vh);
-  border-radius: 50%;
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    rgba(70, 96, 160, 0.18) 0%,
-    rgba(40, 54, 90, 0.08) 45%,
-    transparent 72%
-  );
-  filter: blur(6px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.bezel {
+/* The stage owns the fullscreen canvas and every floating HUD layer. */
+.stage {
   position: relative;
-  z-index: 1;
-  flex: 0 0 auto;
-  width: 100%;
-  max-width: 460px;
+  flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--cab-edge);
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 12%),
-    linear-gradient(180deg, #1b2331 0%, #101623 34%, #0a0f19 72%, #06090f 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.6),
-    0 18px 50px rgba(0, 0, 0, 0.65);
+  min-height: 0;
   overflow: hidden;
 }
 
-/* Cabinet screws: four small metal studs on the bezel corners. */
-.bezel::before,
-.bezel::after {
-  content: "";
+#board {
   position: absolute;
-  z-index: 4;
-  width: 42px;
-  height: 42px;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 7px 7px, rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px),
-    radial-gradient(circle at calc(100% - 7px) 7px, rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px),
-    radial-gradient(circle at 7px calc(100% - 7px), rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px),
-    radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), rgba(255, 255, 255, 0.5) 0 2px, transparent 2.6px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
 }
 
-.bezel::before {
+/* --------------------------------------------------------- floating HUD */
+
+.hud-top {
+  position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  z-index: 9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(var(--safe-area-top) + 10px) calc(var(--safe-area-right) + 10px) 0
+    calc(var(--safe-area-left) + 10px);
+  pointer-events: none;
 }
 
-.bezel::after {
-  bottom: 0;
-  right: 0;
+/* A scene panel owns the whole stage while open: tuck the resource chips away
+   so they cannot cover its back button (the fabs stay reachable top-right). */
+.overlay:not(.overlay--title) ~ .hud-top .hud-chips {
+  visibility: hidden;
+}
+
+.hud-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.hud-chip {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.hud-chip__ico {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  opacity: 0.85;
+}
+
+.hud-chip__ico svg {
+  width: 100%;
+  height: 100%;
+}
+
+.hud-chip b {
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+
+.hud-chip--heat .hud-chip__ico { color: var(--led-amber); }
+.hud-chip--heat b { color: var(--led-amber); }
+.hud-chip--gem .hud-chip__ico { color: var(--led-cyan); }
+.hud-chip--gem b {
+  color: var(--led-cyan);
+  text-shadow: 0 0 8px rgba(106, 212, 255, 0.35);
+}
+.hud-chip--shield .hud-chip__ico { color: #a8d8ff; }
+.hud-chip--shield b { color: #cfe6ff; }
+.hud-chip--tower .hud-chip__ico { color: var(--accent); }
+
+:root[data-theme="light"] .hud-chip {
+  box-shadow: 0 4px 14px rgba(40, 52, 76, 0.18);
+}
+:root[data-theme="light"] .hud-chip--gem b { text-shadow: none; }
+:root[data-theme="light"] .hud-chip--gem .hud-chip__ico { color: #1d7fae; }
+:root[data-theme="light"] .hud-chip--shield .hud-chip__ico { color: #4a7ca8; }
+:root[data-theme="light"] .hud-chip--shield b { color: #2c5a86; }
+
+.hud-actions {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* Circular floating icon button (pause / help / settings). */
+.fab {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-2);
+  color: var(--primary);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+
+.fab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.fab:active {
+  transform: scale(0.94);
+}
+
+.fab[hidden] {
+  display: none;
+}
+
+:root[data-theme="light"] .fab {
+  box-shadow: 0 4px 14px rgba(40, 52, 76, 0.18);
 }
 
 @media (min-width: 920px) {
-  .cabinet {
-    align-items: center;
-    gap: 26px;
-    padding-block: 18px;
-  }
-
-  .bezel {
-    flex: 0 0 auto;
-    width: 500px;
-    max-width: 520px;
-  }
-
   .side-panel {
     display: block !important;
+    position: relative;
+    flex: 0 0 320px;
     width: 320px;
-    max-height: calc(100dvh - 36px);
+    max-height: none;
+    height: 100%;
     overflow-y: auto;
   }
 }
@@ -415,7 +477,7 @@ body {
 
 .boss-bar {
   position: absolute;
-  top: 8px;
+  top: calc(var(--safe-area-top) + 56px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -461,7 +523,7 @@ body {
 
 .danger {
   position: absolute;
-  top: 10px;
+  top: calc(var(--safe-area-top) + 98px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 6;
@@ -551,19 +613,50 @@ body {
 
 .key[hidden] { display: none; }
 
-/* --------------------------------------------------------------- build bar */
+/* -------------------------------------------------- in-run build shortcut */
 
-.build-bar {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 1px 0;
-  min-height: 0;
+.fab--build {
+  position: absolute;
+  right: calc(var(--safe-area-right) + 12px);
+  bottom: calc(var(--safe-area-bottom) + 12px);
+  z-index: 9;
 }
 
-.build-bar::-webkit-scrollbar { display: none; }
-.build-bar[hidden] { display: none; }
+.fab__badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #1c1204;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Section heading inside the build overlay (mirrors .side-panel__sub). */
+.build-sub {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+.build-sub:first-child {
+  margin-top: 0;
+}
+
+.build-overlay__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
 
 .build-chip {
   --cat: #ffb347;
@@ -1577,7 +1670,7 @@ body {
 .notice {
   position: absolute;
   left: 50%;
-  bottom: 4px;
+  bottom: calc(var(--safe-area-bottom) + 12px);
   transform: translateX(-50%);
   margin: 0;
   font-size: 11px;
@@ -5866,36 +5959,149 @@ body,
   }
 }
 
-/* 手机中游戏本身就是屏幕：安全区留在面板内部，背景延伸到屏幕边缘。 */
-@media (width < 920px) {
-  .cabinet {
-    padding: 0;
-    align-items: stretch;
+/* 手机中游戏本身就是屏幕：安全区由 .hud-top/.dock 等悬浮层内部消化。 */
+
+/* =========================================================================
+   Fullscreen v12 — immersive mobile layout: bottom dock title screen.
+   Appended last so it wins over every older cabinet/title skin.
+   ========================================================================= */
+
+/* Title screen: content stacks from the top, the dock pins to the bottom. */
+.overlay--title {
+  justify-content: flex-start;
+  gap: 10px;
+  padding-top: calc(var(--safe-area-top) + 24px);
+  padding-inline: calc(var(--safe-area-left) + 16px) calc(var(--safe-area-right) + 16px);
+}
+
+.overlay--title .logo {
+  margin-top: clamp(6px, 4vh, 34px);
+}
+
+.overlay--title .overlay__hint {
+  margin-top: 2px;
+}
+
+/* Resume: compact ghost chip under the start button. */
+.btn--resume {
+  min-height: 38px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  gap: 6px;
+}
+
+.btn--resume svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Bottom dock: icon entries for everything that is not the start button. */
+.dock {
+  margin-top: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  width: min(480px, 100%);
+  padding: 6px 6px calc(6px + var(--safe-area-bottom));
+  border-top: 1px solid var(--panel-border);
+  border-radius: 16px 16px 0 0;
+  background: var(--panel-strong-2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.dock__item {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+  color: var(--primary);
+}
+
+.dock__item:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dock__item .menu-item__medal {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--accent);
+}
+
+.dock__item .menu-item__medal svg {
+  width: 21px;
+  height: 21px;
+}
+
+.dock__item .menu-item__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.78;
+  white-space: nowrap;
+}
+
+:root[data-theme="light"] .dock {
+  box-shadow: 0 -8px 24px rgba(40, 52, 76, 0.14);
+}
+
+:root[data-theme="light"] .dock__item:active {
+  background: rgba(20, 34, 62, 0.06);
+}
+
+:root[data-theme="light"] .dock__item .menu-item__medal {
+  color: #a97f22;
+}
+
+/* Settings gear: circular fab above the dock's right edge. */
+.fab--menu {
+  position: absolute;
+  right: calc(var(--safe-area-right) + 12px);
+  bottom: calc(var(--safe-area-bottom) + 84px);
+}
+
+/* Short landscape: keep the dock usable, drop the vertical spacing. */
+@media (max-height: 520px) {
+  .overlay--title {
+    padding-top: calc(var(--safe-area-top) + 8px);
+    gap: 6px;
   }
 
-  .cabinet::before { display: none; }
-
-  .bezel,
-  :root[data-theme="light"] .bezel {
-    max-width: none;
-    height: 100%;
-    padding-inline: var(--safe-area-left) var(--safe-area-right);
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
+  .overlay--title .logo {
+    margin-top: 0;
+    font-size: clamp(24px, 6vh, 34px);
   }
 
-  .deck--top {
-    padding-top: calc(8px + var(--safe-area-top));
+  .dock__item {
+    min-height: 44px;
   }
+}
 
-  .deck--bottom,
-  :root[data-theme="light"] .deck--bottom {
-    padding-bottom: calc(12px + var(--safe-area-bottom));
-  }
+/* 场景浮层现在覆盖整个舞台：上下给安全区让位（刘海/手势条）。 */
+.overlay {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+}
 
-  .screen {
-    display: flex;
-    flex: 1 1 0;
-  }
+/* 场景打开时，右上悬浮钮下移到场景标题栏之下，不再压住标题/角标；
+   徽章已由上方规则隐藏，这里只移动 .hud-actions 所在行。 */
+.overlay:not(.overlay--title) ~ .hud-top {
+  top: calc(var(--safe-area-top) + 48px);
+  padding-top: 0;
 }

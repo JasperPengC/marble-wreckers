@@ -46,7 +46,8 @@ import { showHelpScene } from "./scenes/help.ts";
 import { createSettingsScene } from "./scenes/settings.ts";
 import { showPauseScene } from "./scenes/pause.ts";
 import { createDraftScene, showRelicScene } from "./scenes/draft.ts";
-import { createHudView } from "./ui/build-bar.ts";
+import { createBuildScene } from "./scenes/build.ts";
+import { createHudView } from "./ui/hud-view.ts";
 import { buildHudModel } from "./ui/hud-model.ts";
 import { bossProgress, towerBottomY } from "./game/board.ts";
 import { relicById } from "./game/relics.ts";
@@ -60,7 +61,6 @@ type TemplateElements = {
   notice: HTMLElement;
   player: HTMLElement;
   board: HTMLCanvasElement;
-  retreat: HTMLButtonElement;
   pause: HTMLButtonElement;
   help: HTMLButtonElement;
   danger: HTMLElement;
@@ -69,13 +69,8 @@ type TemplateElements = {
   "banner-sub": HTMLElement;
   "boss-bar": HTMLElement;
   "boss-fill": HTMLElement;
-  screen: HTMLElement;
-  "screen-inner": HTMLElement;
-  cabinet: HTMLElement;
-  bezel: HTMLElement;
-  "deck-top": HTMLElement;
-  "deck-bottom": HTMLElement;
-  "build-bar": HTMLElement;
+  "build-fab": HTMLButtonElement;
+  "build-fab-badge": HTMLElement;
   "build-list": HTMLElement;
   "side-tower": HTMLElement;
   "side-legend": HTMLElement;
@@ -254,76 +249,21 @@ const hud = createHudView({
  */
 function syncCanvasSize(): void {
   const rect = canvas.getBoundingClientRect();
-  if (rect.width < 1) return;
+  if (rect.width < 1 || rect.height < 1) return;
   const dpr = Math.min(3, window.devicePixelRatio || 1);
   const width = Math.max(1, Math.round(rect.width * dpr));
-  // Backing store follows the logical 400x660 aspect exactly. Deriving the
-  // height from the CSS box instead leaves an unpainted strip at the bottom
-  // (the renderer maps one logical unit to one device pixel on both axes).
-  const height = Math.max(1, Math.round((width * H) / W));
+  const height = Math.max(1, Math.round(rect.height * dpr));
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
   }
 }
 /**
- * Fit the 400x660 playfield inside whatever deck space the cabinet leaves,
- * letterboxing the screen instead of distorting it.
+ * The canvas is fullscreen (CSS pins it to the viewport), so its backing store
+ * just follows resize events — no more letterbox math against the cabinet.
  */
-function fitScreen(): void {
-  const viewportW = document.documentElement.clientWidth;
-  const viewportH = window.innerHeight;
-  if (viewportW < 2 || viewportH < 2) return;
-  const inner = element("screen-inner");
-  const screen = element("screen");
-  const bezel = element("bezel");
-  const cabinet = element("cabinet");
-  const cabinetStyle = getComputedStyle(cabinet);
-  const bezelStyle = getComputedStyle(bezel);
-  const ratio = W / H;
-  const maxBezelH = cabinet.clientHeight -
-    parseFloat(cabinetStyle.paddingTop) - parseFloat(cabinetStyle.paddingBottom) -
-    parseFloat(bezelStyle.borderTopWidth) - parseFloat(bezelStyle.borderBottomWidth);
-  const deckH =
-    element("deck-top").getBoundingClientRect().height +
-    element("deck-bottom").getBoundingClientRect().height;
-
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
-  const apply = (height: number): void => {
-    // Derive width from height, then snap the CSS height onto whole device
-    // pixels of the exact 400:660 ratio, so the backing store and the CSS box
-    // agree to the pixel on every DPR (fixed a 3px mobile mismatch).
-    const width = Math.floor(height * ratio);
-    height = Math.round((width * H) / W * dpr) / dpr;
-    const nextW = width + "px";
-    const nextH = height.toFixed(3) + "px";
-    if (inner.style.width !== nextW || inner.style.height !== nextH) {
-      inner.style.width = nextW;
-      inner.style.height = nextH;
-    }
-    const nextScreenH = height.toFixed(3) + "px";
-    if (screen.style.height !== nextScreenH) screen.style.height = nextScreenH;
-  };
-
-  // First pass: fit the CRT in the measured screen box (excludes padding).
-  const availW = Math.max(80, element("screen").clientWidth);
-  const availH = Math.max(120, maxBezelH - deckH);
-  let height = availW / ratio;
-  if (height > availH) height = availH;
-  apply(Math.floor(height));
-
-  // Correction passes: decks can grow after the first measure (fonts, wraps,
-  // build bar appearing). Shrink until the whole cabinet fits the viewport.
-  for (let i = 0; i < 4; i++) {
-    const totalH =
-      element("deck-top").getBoundingClientRect().height +
-      element("screen").getBoundingClientRect().height +
-      element("deck-bottom").getBoundingClientRect().height;
-    const overflow = totalH - maxBezelH;
-    if (overflow <= 1) break;
-    height = Math.max(120, height - overflow);
-    apply(Math.floor(height));
-  }
+function refitCanvas(): void {
+  lastDpr = window.devicePixelRatio || 1;
   syncCanvasSize();
 }
 
@@ -393,16 +333,16 @@ function announceTower(): void {
 
 function updateHUD(): void {
   hud.updateHUD(buildHudModel(run, meta, t));
-  const towerLabel = document.getElementById("hud-tower-label");
-  if (towerLabel) towerLabel.textContent = run ? "当前楼栋" : "最高楼栋";
+  // 楼栋徽章的悬浮提示随局内/局外切换（图标化徽章没有文字标签）。
+  const towerChip = document.querySelector<HTMLElement>(".hud-chip--tower");
+  if (towerChip) towerChip.title = t(run ? "hud.towerNow" : "hud.towerBest");
 }
 
-function updateBuildBar(): void {
-  hud.updateBuildBar(buildHudModel(run, meta, t));
+function updateBuild(): void {
+  hud.updateBuild(buildHudModel(run, meta, t));
 }
 
 function setRunChrome(active: boolean): void {
-  element("retreat").hidden = !active;
   element("pause").hidden = !active;
   if (!active) element("danger").hidden = true;
 }
@@ -416,7 +356,7 @@ function showMenu(): void {
   run = null;
   paused = false;
   setRunChrome(false);
-  updateBuildBar();
+  updateBuild();
   showMenuScene(overlay, t, {
     bestTower: meta.bestTower,
     bestScore: meta.bestScore,
@@ -448,7 +388,7 @@ function resumeRun(restored: Run): void {
   overlay.hide();
   setRunChrome(true);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   announceTower();
 }
 
@@ -463,7 +403,7 @@ function startRun(daily: boolean): void {
   overlay.hide();
   setRunChrome(true);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   announceTower();
   persistAll(true);
 }
@@ -488,7 +428,7 @@ function endRun(abandon: boolean): void {
   void host.save("meta", meta);
   void host.save("run", null);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   if (abandon) {
     setNotice(`${t("death.coins")} +${fmtNum(finished.coins)}`);
     showMenu();
@@ -515,6 +455,7 @@ const shopScene = createShopScene(shell, t);
 const skillsScene = createSkillsScene(shell, t);
 const settingsScene = createSettingsScene(shell, t);
 const draftScene = createDraftScene(shell, t);
+const buildScene = createBuildScene(shell, t);
 
 // 场景只接收只读快照与回调；状态变更和持久化统一留在组装层。
 function buyShop(id: string): void {
@@ -531,7 +472,7 @@ function buyShop(id: string): void {
   meta.shop[id] = level + 1;
   void host.save("meta", meta);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   setNotice(t("shop.bought"));
   showShop();
 }
@@ -556,7 +497,7 @@ function pickDraft(id: string): void {
   overlay.hide();
   setRunChrome(true);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   announceTower();
   setNotice(def.name + " Lv " + (run.levels[id] ?? 1));
 }
@@ -576,7 +517,7 @@ function showRelic(): void {
       persistAll(true);
       setNotice(t("relic.picked").replace("{name}", relicById(id)!.name));
       updateHUD();
-      updateBuildBar();
+      updateBuild();
       overlay.hide();
       setRunChrome(true);
     },
@@ -596,7 +537,7 @@ function rerollDraft(): void {
   run.draftOptions = rollDraft(run.levels, run.rng);
   draftScene.resetFocus();
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   setNotice(t("draft.rerollDone").replace("{n}", String(run.draftRerolls)));
   showDraft();
 }
@@ -647,8 +588,11 @@ function showDeath(
 
 function pointerAngle(event: PointerEvent): number {
   const rect = canvas.getBoundingClientRect();
-  const px = ((event.clientX - rect.left) / rect.width) * W;
-  const py = ((event.clientY - rect.top) / rect.height) * H;
+  // The field floats centred inside the fullscreen canvas: undo the field
+  // origin (device px) before normalising into logical playfield coordinates.
+  const view = renderer.view();
+  const px = ((event.clientX - rect.left) * lastDpr - view.ox) / view.scale;
+  const py = ((event.clientY - rect.top) * lastDpr - view.oy) / view.scale;
   const dx = px - W / 2;
   const dy = py - CANNON_Y;
   return Math.atan2(dx, -dy);
@@ -707,10 +651,6 @@ window.addEventListener("keyup", (event) => {
   if (event.code === "ArrowRight" || event.code === "KeyD") keys.right = false;
 });
 
-element("retreat").addEventListener("click", () => {
-  if (run) pause();
-});
-
 element("help").addEventListener("click", () => {
   showHelp();
 });
@@ -718,6 +658,10 @@ element("help").addEventListener("click", () => {
 element("pause").addEventListener("click", () => {
   if (paused) resume();
   else pause();
+});
+
+element("build-fab").addEventListener("click", () => {
+  showBuild();
 });
 
 /**
@@ -782,6 +726,20 @@ function showHelp(): void {
   const inRun = !!run && run.phase !== "dead";
   pauseForInfo();
   showHelpScene(shell, t, inRun ? returnFromInfoScreen : showMenu);
+}
+
+/** 右下角「构筑」圆钮 → 随身构筑面板（强化/遗物/图例）。 */
+function showBuild(): void {
+  const inRun = !!run && run.phase !== "dead";
+  pauseForInfo();
+  buildScene({
+    model: buildHudModel(run, meta, t),
+    onSkill: (id) => showSkill(id),
+    onBack: () => {
+      if (inRun) returnFromInfoScreen();
+      else showMenu();
+    },
+  });
 }
 
 // --------------------------------------------------------------- settings
@@ -952,12 +910,16 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("pagehide", () => persistAll(true));
 window.addEventListener("beforeunload", () => persistAll(true));
+// Fullscreen canvas: the CSS box tracks the viewport, so the backing store
+// follows resize events (browser zoom, rotation, mobile URL-bar collapse).
+window.addEventListener("resize", refitCanvas);
+window.addEventListener("orientationchange", refitCanvas);
+window.visualViewport?.addEventListener("resize", refitCanvas);
 
 // ---------------------------------------------------------------------------
 // Loop
 
 let last = performance.now();
-let fitTick = 0;
 let autosaveT = 0;
 function loop(now: number): void {
   requestAnimationFrame(loop);
@@ -967,14 +929,6 @@ function loop(now: number): void {
   perfBuf[perfIdx++ % perfBuf.length] = rawDt;
   perfFrames++;
   try {
-    // Device pixel ratio can change (browser zoom, screen moves, DPI change).
-    if ((window.devicePixelRatio || 1) !== lastDpr) {
-      lastDpr = window.devicePixelRatio || 1;
-      fitScreen();
-    }
-    // The cabinet layout can settle a few frames after mount (fonts, HMR,
-    // viewport switches): keep the CRT opening fitted.
-    if (++fitTick % 20 === 0) fitScreen();
     if (paused) return;
     // Autosave: cheap, throttled, and independent of tab lifecycle events.
     if (run) {
@@ -1117,7 +1071,7 @@ function installDebugHooks(): void {
       }
       run.levels[id] = target;
     }
-    updateBuildBar();
+    updateBuild();
     updateHUD();
     return true;
   };
@@ -1126,7 +1080,7 @@ function installDebugHooks(): void {
     meta.coins = Math.max(0, Math.floor(amount));
     void host.save("meta", meta);
     updateHUD();
-    updateBuildBar();
+    updateBuild();
     if (!overlay.root.hidden && infoReturn === "menu") showShop();
     return meta.coins;
   };
@@ -1219,19 +1173,18 @@ function hydrateIcons(): void {
   for (const [idName, iconName, label] of [
     ["help", "help", t("menu.help")],
     ["pause", "pause", t("pause.button")],
+    ["build-fab", "critPower", t("build.title")],
   ] as const) {
     const button = document.getElementById(idName);
     if (!button) continue;
     if (!button.querySelector("svg")) button.append(icon(iconName));
     button.setAttribute("aria-label", label);
   }
-  const retreat = element("retreat");
-  if (!retreat.querySelector("svg")) retreat.prepend(icon("flag"));
 }
 
 function localizeAndStart(): void {
   hydrateIcons();
-  fitScreen();
+  refitCanvas();
   localize();
   updateHUD();
   showMenu();

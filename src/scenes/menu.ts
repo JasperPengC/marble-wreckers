@@ -18,6 +18,11 @@ export interface MenuSceneInput {
   onSettings(): void;
 }
 
+/**
+ * Title screen in the standard mobile-game shape: big primary start button in
+ * the middle, everything else tucked into a bottom dock, settings as a floating
+ * gear above the dock's right edge.
+ */
 export function showMenuScene(overlay: OverlayManager, t: Translate, input: MenuSceneInput): void {
   overlay.clear();
   overlay.root.className = "overlay overlay--title";
@@ -30,14 +35,12 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
       h("span", { class: "records__label" }, label),
       h("b", {}, value)
     );
-  const item = (label: string, iconName: string, onclick: () => void, extra = "") =>
+  const dockItem = (label: string, iconName: string, onclick: () => void) =>
     h(
       "button",
-      { class: "menu-item" + (extra ? " " + extra : ""), onclick },
-      h("span", { class: "menu-item__cursor" }, "►"),
+      { class: "menu-item dock__item", onclick },
       h("span", { class: "menu-item__medal" }, icon(iconName)),
-      h("span", { class: "menu-item__label" }, label),
-      h("span", { class: "menu-item__chev" }, icon("chevron"))
+      h("span", { class: "menu-item__label" }, label)
     );
   const children: Array<Node | null> = [
     h("div", { class: "logo overlay__title" }, t("title")),
@@ -60,22 +63,29 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
     ),
     ...(input.resumable
       ? [
-          item(t("menu.resume"), "restart", () => {
-            input.onResume();
-          }),
+          h(
+            "button",
+            { class: "btn btn--ghost btn--resume", onclick: () => input.onResume() },
+            icon("restart"),
+            t("menu.resume")
+          ),
         ]
       : []),
+    h("p", { class: "overlay__hint" }, coarse ? t("menu.hintMobile") : t("menu.hint")),
     h(
       "nav",
-      { class: "menu-list" },
-      item(t("menu.dailyShort"), "calendar", () => input.onStart(true)),
-      item(t("menu.shopShort"), "shop", () => input.onShop()),
-      item(t("menu.collectionShort"), "book", () => input.onCollection()),
-      item(t("menu.skills"), "critPower", () => input.onSkills()),
-      item(t("menu.help"), "help", () => input.onHelp()),
-      item(t("menu.settings"), "gear", () => input.onSettings())
+      { class: "dock" },
+      dockItem(t("menu.dailyShort"), "calendar", () => input.onStart(true)),
+      dockItem(t("menu.shopShort"), "shop", () => input.onShop()),
+      dockItem(t("menu.collectionShort"), "book", () => input.onCollection()),
+      dockItem(t("menu.skills"), "critPower", () => input.onSkills()),
+      dockItem(t("menu.help"), "help", () => input.onHelp())
     ),
-    h("p", { class: "overlay__hint" }, coarse ? t("menu.hintMobile") : t("menu.hint"))
+    h(
+      "button",
+      { class: "fab fab--menu", "aria-label": t("menu.settings"), onclick: () => input.onSettings() },
+      icon("gear")
+    )
   ];
   overlay.root.append(...children.filter((node): node is Node => node !== null));
   overlay.show();

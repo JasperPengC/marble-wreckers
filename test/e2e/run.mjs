@@ -1083,25 +1083,25 @@ async function testMenus(ctx) {
   await clickSelector("#overlay .btn--primary");
   await waitPhase("aim", { timeout: 8000, label: "点击开始后进入瞄准阶段" });
 
-  // 局内 →「带灵石撤退」→ 暂停面板 →「结算并按灵石撤退」→ 菜单
-  await clickSelector("#retreat");
+  // 局内 → 悬浮「暂停」→ 暂停面板 →「结算并按灵石撤退」→ 菜单
+  await clickSelector("#pause");
   const pausePanel = await waitFor(
     async () => {
       const state = await overlayState();
       return !state.hidden && state.title.length > 0 ? state : null;
     },
-    { timeout: 8000, label: "点撤退后出现暂停面板" }
+    { timeout: 8000, label: "点暂停后出现暂停面板" }
   );
   assert(
     ["暂停", "Paused"].some((token) => pausePanel.title.includes(token)),
-    `点「带灵石撤退」应打开暂停面板，实际标题: "${pausePanel.title}"`
+    `点「暂停」应打开暂停面板，实际标题: "${pausePanel.title}"`
   );
   const pauseRetreat = pausePanel.buttons.find(
     (button) => button.text.includes("结算") || button.text.includes("Bank")
   );
   assert(pauseRetreat, `暂停面板缺少「结算并按灵石撤退」: ${pausePanel.buttons.map((b) => b.text).join(" | ")}`);
   ctx.note(
-    `撤退入口: #retreat → 暂停面板「${pausePanel.title}」，按钮 ${pausePanel.buttons.map((b) => b.text).join(" | ")}`
+    `撤退入口: #pause → 暂停面板「${pausePanel.title}」，按钮 ${pausePanel.buttons.map((b) => b.text).join(" | ")}`
   );
   await clickOverlayButtonByTokens(["结算", "撤退", "Bank", "quit", "Retreat"], {
     fromEnd: 0,
@@ -1294,12 +1294,12 @@ async function testPause(ctx) {
     { timeout: 8000, label: "暂停中撤退后回到菜单" }
   );
   const chromeHidden = await ev(
-    "({ pauseHidden: document.getElementById('pause')?.hidden === true, retreatHidden: document.getElementById('retreat')?.hidden === true })"
+    "({ pauseHidden: document.getElementById('pause')?.hidden === true, retreatGone: document.getElementById('retreat') === null })"
   );
   const notice = String((await ev("(document.getElementById('notice') || {}).textContent || ''"))).trim();
   assert(
-    chromeHidden.pauseHidden && chromeHidden.retreatHidden,
-    `回到菜单后暂停/撤退按钮应隐藏，实际: ${brief(chromeHidden)}`
+    chromeHidden.pauseHidden && chromeHidden.retreatGone,
+    `回到菜单后暂停按钮应隐藏、场内撤退按钮应不存在，实际: ${brief(chromeHidden)}`
   );
   ctx.note(
     `暂停撤退 → 菜单: "${menu.overlay.title}"，按钮 ${menu.overlay.buttons.length} 个，通知="${notice}"（入口 ${retreatEntry.how}）`
@@ -1393,27 +1393,51 @@ async function testGameUI(ctx) {
     async () => {
       const state = await ev(
         "(() => {\n" +
-          "  const bar = document.getElementById('build-bar');\n" +
-          "  if (!bar) return null;\n" +
-          "  const chips = [...bar.querySelectorAll('.build-chip')];\n" +
-          "  return { hidden: bar.hidden, count: chips.length, chips: chips.map((chip) => ({ text: (chip.textContent || '').trim(), label: chip.getAttribute('aria-label') || '' })) };\n" +
+          "  const fab = document.getElementById('build-fab');\n" +
+          "  if (!fab) return null;\n" +
+          "  const badge = document.getElementById('build-fab-badge');\n" +
+          "  return { hidden: fab.hidden, badge: (badge?.textContent || '').trim() };\n" +
           "})()"
       );
-      return state && !state.hidden && state.count > 0 ? state : null;
+      return state && !state.hidden && state.badge.length > 0 ? state : null;
     },
-    { timeout: 8000, label: "选择强化后出现构筑栏" }
+    { timeout: 8000, label: "选择强化后出现构筑圆钮" }
   );
   assert(
-    build.chips.some((chip) => /Lv\s*\d+|MAX/.test(chip.text)),
-    `构筑 chip 缺少等级标识: ${build.chips.map((chip) => chip.text).join(" | ")}`
+    Number(build.badge) >= 1,
+    `构筑圆钮角标应为强化数量，实际: "${build.badge}"`
+  );
+  ctx.note(`构筑圆钮出现: 角标 ${build.badge}（已获强化数）`);
+  await ctx.shot("10b-buildfab");
+
+  // c) 点圆钮 → 构筑浮层（强化/遗物/图例）→ 点强化 → 技能详情 →「继续游戏」关闭
+  await clickSelector("#build-fab");
+  const buildPanel = await waitFor(
+    async () => {
+      const state = await overlayState();
+      return !state.hidden && state.title.length > 0 && state.buttons.length >= 1 ? state : null;
+    },
+    { timeout: 6000, label: "构筑浮层打开" }
+  );
+  assert(
+    ["构筑", "Build"].some((token) => buildPanel.title.includes(token)),
+    `构筑浮层标题异常: "${buildPanel.title}"`
+  );
+  const buildRows = await ev(
+    "(() => {\n" +
+      "  const rows = [...document.querySelectorAll('#overlay .build-row')];\n" +
+      "  return { count: rows.length, texts: rows.map((row) => (row.textContent || '').trim()) };\n" +
+      "})()"
+  );
+  assert(buildRows.count >= 1, "构筑浮层缺少强化行 .build-row");
+  assert(
+    buildRows.texts.some((text) => /Lv\s*\d+|MAX/.test(text)),
+    `构筑行缺少等级标识: ${buildRows.texts.join(" | ")}`
   );
   ctx.note(
-    `构筑栏出现: ${build.count} 个 chip: ${build.chips.map((chip) => chip.label || chip.text).join(" | ")}`
+    `构筑浮层: "${buildPanel.title}"，强化行 ${buildRows.count} 条: ${buildRows.texts.join(" | ")}`
   );
-  await ctx.shot("10b-buildbar");
-
-  // c) 点 chip → 技能详情（Lv / 当前效果 / 升级到 Lv z）→「继续游戏」关闭
-  await clickSelector("#build-bar .build-chip", 0);
+  await clickSelector("#overlay .build-row", 0);
   const skill = await waitFor(
     async () => {
       const state = await overlayState();
@@ -1453,14 +1477,14 @@ async function testGameUI(ctx) {
   const afterSkill = await dbg();
   assert(afterSkill.phase === "aim", `关闭技能详情后应回到对局(aim)，实际 ${afterSkill.phase}`);
   const chromeAfterSkill = await ev(
-    "({ pauseVisible: document.getElementById('pause').hidden === false, retreatVisible: document.getElementById('retreat').hidden === false })"
+    "({ pauseVisible: document.getElementById('pause').hidden === false })"
   );
   assert(
-    chromeAfterSkill.pauseVisible && chromeAfterSkill.retreatVisible,
-    `关闭技能详情后暂停/撤退按钮应恢复可见: ${brief(chromeAfterSkill)}`
+    chromeAfterSkill.pauseVisible,
+    `关闭技能详情后暂停按钮应恢复可见: ${brief(chromeAfterSkill)}`
   );
   ctx.note(
-    `「继续游戏」关闭技能详情: overlay 隐藏，phase=${afterSkill.phase}，暂停/撤退按钮恢复可见`
+    `「继续游戏」关闭技能详情: overlay 隐藏，phase=${afterSkill.phase}，暂停按钮恢复可见`
   );
 
   // d) 响应式：#side-panel 手机 390x844 隐藏，桌面 1280x900 可见
@@ -1592,7 +1616,8 @@ async function testSceneActions(ctx) {
   assert(await ev("document.querySelector('#overlay .tab--on')?.textContent === '元素'"),
     "技能详情返回后应保留图鉴分类");
   await clickSelector("#overlay .scene__back");
-  await clickOverlayButtonByTokens(["设置", "Settings"]);
+  // 设置是主页右下角的圆形悬浮齿轮（.fab），不在 dock 里。
+  await clickSelector("#overlay .fab--menu");
   await clickSelector("#overlay .seg__opt", 2); // 浅色
   assert(await ev("document.documentElement.dataset.theme === 'light'"), "设置主题应立即生效");
   await ev(`(() => {
@@ -1636,7 +1661,7 @@ async function testSceneActions(ctx) {
     { label: "暂停后的单局存档" });
   assert(withRun.run, "暂停应生成可导入的单局快照");
   await clickOverlayButtonByTokens(["Bank gems", "撤退"]);
-  await clickOverlayButtonByTokens(["Settings", "设置"]);
+  await clickSelector("#overlay .fab--menu");
   await pasteBackup(JSON.stringify(withRun));
   await clickSelector("#overlay .backup-actions .btn", 1);
   await clickSelector("#overlay .scene__back");
