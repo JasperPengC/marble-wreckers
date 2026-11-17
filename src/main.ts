@@ -46,7 +46,8 @@ import { showHelpScene } from "./scenes/help.ts";
 import { createSettingsScene } from "./scenes/settings.ts";
 import { showPauseScene } from "./scenes/pause.ts";
 import { createDraftScene, showRelicScene } from "./scenes/draft.ts";
-import { createHudView } from "./ui/build-bar.ts";
+import { createBuildScene } from "./scenes/build.ts";
+import { createHudView } from "./ui/hud-view.ts";
 import { buildHudModel } from "./ui/hud-model.ts";
 import { bossProgress, towerBottomY } from "./game/board.ts";
 import { relicById } from "./game/relics.ts";
@@ -68,7 +69,8 @@ type TemplateElements = {
   "banner-sub": HTMLElement;
   "boss-bar": HTMLElement;
   "boss-fill": HTMLElement;
-  "build-bar": HTMLElement;
+  "build-fab": HTMLButtonElement;
+  "build-fab-badge": HTMLElement;
   "build-list": HTMLElement;
   "side-tower": HTMLElement;
   "side-legend": HTMLElement;
@@ -335,8 +337,8 @@ function updateHUD(): void {
   if (towerLabel) towerLabel.textContent = t(run ? "hud.towerNow" : "hud.towerBest");
 }
 
-function updateBuildBar(): void {
-  hud.updateBuildBar(buildHudModel(run, meta, t));
+function updateBuild(): void {
+  hud.updateBuild(buildHudModel(run, meta, t));
 }
 
 function setRunChrome(active: boolean): void {
@@ -353,7 +355,7 @@ function showMenu(): void {
   run = null;
   paused = false;
   setRunChrome(false);
-  updateBuildBar();
+  updateBuild();
   showMenuScene(overlay, t, {
     bestTower: meta.bestTower,
     bestScore: meta.bestScore,
@@ -385,7 +387,7 @@ function resumeRun(restored: Run): void {
   overlay.hide();
   setRunChrome(true);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   announceTower();
 }
 
@@ -400,7 +402,7 @@ function startRun(daily: boolean): void {
   overlay.hide();
   setRunChrome(true);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   announceTower();
   persistAll(true);
 }
@@ -425,7 +427,7 @@ function endRun(abandon: boolean): void {
   void host.save("meta", meta);
   void host.save("run", null);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   if (abandon) {
     setNotice(`${t("death.coins")} +${fmtNum(finished.coins)}`);
     showMenu();
@@ -452,6 +454,7 @@ const shopScene = createShopScene(shell, t);
 const skillsScene = createSkillsScene(shell, t);
 const settingsScene = createSettingsScene(shell, t);
 const draftScene = createDraftScene(shell, t);
+const buildScene = createBuildScene(shell, t);
 
 // 场景只接收只读快照与回调；状态变更和持久化统一留在组装层。
 function buyShop(id: string): void {
@@ -468,7 +471,7 @@ function buyShop(id: string): void {
   meta.shop[id] = level + 1;
   void host.save("meta", meta);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   setNotice(t("shop.bought"));
   showShop();
 }
@@ -493,7 +496,7 @@ function pickDraft(id: string): void {
   overlay.hide();
   setRunChrome(true);
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   announceTower();
   setNotice(def.name + " Lv " + (run.levels[id] ?? 1));
 }
@@ -513,7 +516,7 @@ function showRelic(): void {
       persistAll(true);
       setNotice(t("relic.picked").replace("{name}", relicById(id)!.name));
       updateHUD();
-      updateBuildBar();
+      updateBuild();
       overlay.hide();
       setRunChrome(true);
     },
@@ -533,7 +536,7 @@ function rerollDraft(): void {
   run.draftOptions = rollDraft(run.levels, run.rng);
   draftScene.resetFocus();
   updateHUD();
-  updateBuildBar();
+  updateBuild();
   setNotice(t("draft.rerollDone").replace("{n}", String(run.draftRerolls)));
   showDraft();
 }
@@ -656,6 +659,10 @@ element("pause").addEventListener("click", () => {
   else pause();
 });
 
+element("build-fab").addEventListener("click", () => {
+  showBuild();
+});
+
 /**
  * Leave a read-only info screen (help / skill detail) and restore whatever was
  * underneath. A draft never pauses the run, so resume() alone would be a no-op
@@ -718,6 +725,20 @@ function showHelp(): void {
   const inRun = !!run && run.phase !== "dead";
   pauseForInfo();
   showHelpScene(shell, t, inRun ? returnFromInfoScreen : showMenu);
+}
+
+/** 右下角「构筑」圆钮 → 随身构筑面板（强化/遗物/图例）。 */
+function showBuild(): void {
+  const inRun = !!run && run.phase !== "dead";
+  pauseForInfo();
+  buildScene({
+    model: buildHudModel(run, meta, t),
+    onSkill: (id) => showSkill(id),
+    onBack: () => {
+      if (inRun) returnFromInfoScreen();
+      else showMenu();
+    },
+  });
 }
 
 // --------------------------------------------------------------- settings
@@ -1049,7 +1070,7 @@ function installDebugHooks(): void {
       }
       run.levels[id] = target;
     }
-    updateBuildBar();
+    updateBuild();
     updateHUD();
     return true;
   };
@@ -1058,7 +1079,7 @@ function installDebugHooks(): void {
     meta.coins = Math.max(0, Math.floor(amount));
     void host.save("meta", meta);
     updateHUD();
-    updateBuildBar();
+    updateBuild();
     if (!overlay.root.hidden && infoReturn === "menu") showShop();
     return meta.coins;
   };
@@ -1151,6 +1172,7 @@ function hydrateIcons(): void {
   for (const [idName, iconName, label] of [
     ["help", "help", t("menu.help")],
     ["pause", "pause", t("pause.button")],
+    ["build-fab", "critPower", t("build.title")],
   ] as const) {
     const button = document.getElementById(idName);
     if (!button) continue;

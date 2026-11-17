@@ -1393,27 +1393,51 @@ async function testGameUI(ctx) {
     async () => {
       const state = await ev(
         "(() => {\n" +
-          "  const bar = document.getElementById('build-bar');\n" +
-          "  if (!bar) return null;\n" +
-          "  const chips = [...bar.querySelectorAll('.build-chip')];\n" +
-          "  return { hidden: bar.hidden, count: chips.length, chips: chips.map((chip) => ({ text: (chip.textContent || '').trim(), label: chip.getAttribute('aria-label') || '' })) };\n" +
+          "  const fab = document.getElementById('build-fab');\n" +
+          "  if (!fab) return null;\n" +
+          "  const badge = document.getElementById('build-fab-badge');\n" +
+          "  return { hidden: fab.hidden, badge: (badge?.textContent || '').trim() };\n" +
           "})()"
       );
-      return state && !state.hidden && state.count > 0 ? state : null;
+      return state && !state.hidden && state.badge.length > 0 ? state : null;
     },
-    { timeout: 8000, label: "选择强化后出现构筑栏" }
+    { timeout: 8000, label: "选择强化后出现构筑圆钮" }
   );
   assert(
-    build.chips.some((chip) => /Lv\s*\d+|MAX/.test(chip.text)),
-    `构筑 chip 缺少等级标识: ${build.chips.map((chip) => chip.text).join(" | ")}`
+    Number(build.badge) >= 1,
+    `构筑圆钮角标应为强化数量，实际: "${build.badge}"`
+  );
+  ctx.note(`构筑圆钮出现: 角标 ${build.badge}（已获强化数）`);
+  await ctx.shot("10b-buildfab");
+
+  // c) 点圆钮 → 构筑浮层（强化/遗物/图例）→ 点强化 → 技能详情 →「继续游戏」关闭
+  await clickSelector("#build-fab");
+  const buildPanel = await waitFor(
+    async () => {
+      const state = await overlayState();
+      return !state.hidden && state.title.length > 0 && state.buttons.length >= 1 ? state : null;
+    },
+    { timeout: 6000, label: "构筑浮层打开" }
+  );
+  assert(
+    ["构筑", "Build"].some((token) => buildPanel.title.includes(token)),
+    `构筑浮层标题异常: "${buildPanel.title}"`
+  );
+  const buildRows = await ev(
+    "(() => {\n" +
+      "  const rows = [...document.querySelectorAll('#overlay .build-row')];\n" +
+      "  return { count: rows.length, texts: rows.map((row) => (row.textContent || '').trim()) };\n" +
+      "})()"
+  );
+  assert(buildRows.count >= 1, "构筑浮层缺少强化行 .build-row");
+  assert(
+    buildRows.texts.some((text) => /Lv\s*\d+|MAX/.test(text)),
+    `构筑行缺少等级标识: ${buildRows.texts.join(" | ")}`
   );
   ctx.note(
-    `构筑栏出现: ${build.count} 个 chip: ${build.chips.map((chip) => chip.label || chip.text).join(" | ")}`
+    `构筑浮层: "${buildPanel.title}"，强化行 ${buildRows.count} 条: ${buildRows.texts.join(" | ")}`
   );
-  await ctx.shot("10b-buildbar");
-
-  // c) 点 chip → 技能详情（Lv / 当前效果 / 升级到 Lv z）→「继续游戏」关闭
-  await clickSelector("#build-bar .build-chip", 0);
+  await clickSelector("#overlay .build-row", 0);
   const skill = await waitFor(
     async () => {
       const state = await overlayState();
