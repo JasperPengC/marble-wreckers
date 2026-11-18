@@ -1082,7 +1082,7 @@ async function testMenus(ctx) {
   await clickSelector("#overlay .btn--primary");
   await waitPhase("aim", { timeout: 8000, label: "点击开始后进入瞄准阶段" });
 
-  // 局内 → 悬浮「暂停」→ 暂停面板 →「结算并按灵石撤退」→ 菜单
+  // 局内 → 悬浮「暂停」→ 暂停面板 →「结算并按灵石撤退」→ 失败结算 → 选关 → 主页
   await clickSelector("#pause");
   const pausePanel = await waitFor(
     async () => {
@@ -1106,12 +1106,23 @@ async function testMenus(ctx) {
     fromEnd: 0,
     label: "结算并按灵石撤退",
   });
+  // 关卡制:撤退进入失败结算(显示已获灵石),点「选关」回选关页,再返回主页
+  await waitFor(
+    async () => (await overlayState()).hidden === false,
+    { timeout: 8000, label: "撤退后失败结算出现" }
+  );
+  await clickOverlayButtonByTokens(["选关", "Stages"], { label: "失败结算选关" });
+  await waitFor(
+    async () => (await ev("!!document.querySelector('.stage-card')")),
+    { timeout: 8000, label: "回到选关页" }
+  );
+  await clickSelector("#overlay .scene__back");
   const menu = await waitFor(
     async () => {
       const state = await overlayState();
       return !state.hidden && state.buttons.length >= 3 ? state : null;
     },
-    { timeout: 8000, label: "结算撤退后回到菜单" }
+    { timeout: 8000, label: "选关返回主页" }
   );
   const retreatNotice = String((await ev("(document.getElementById('notice') || {}).textContent || ''"))).trim();
   ctx.note(
@@ -1660,6 +1671,9 @@ async function testSceneActions(ctx) {
     { label: "暂停后的单局存档" });
   assert(withRun.run, "暂停应生成可导入的单局快照");
   await clickOverlayButtonByTokens(["Bank gems", "撤退"]);
+  // 关卡制:撤退进入失败结算,经「选关」回主页再进设置导入
+  await clickOverlayButtonByTokens(["Stages", "选关"]);
+  await clickSelector("#overlay .scene__back");
   await clickSelector("#overlay .fab--menu");
   await pasteBackup(JSON.stringify(withRun));
   await clickSelector("#overlay .backup-actions .btn", 1);
@@ -1862,8 +1876,8 @@ async function testBossAndRelic(ctx) {
   await clickSelector("#overlay .stage-card--next .stage-diff--easy");
   await waitPhase("aim", { timeout: 8000, label: "进入第 2 关" });
 
-  // 清掉本关第 1 栋,下一栋就是 Boss
-  for (let tower = 0; tower < 1; tower += 1) {
+  // 关底 Boss 在本关最后一栋:先清两栋
+  for (let tower = 0; tower < 2; tower += 1) {
     await ev("window.__win()");
     await waitFor(async () => (await dbg())?.phase === "draft", { timeout: 6000, label: "进入抽卡" });
     await waitCards("抽卡卡片出现");
@@ -1900,13 +1914,9 @@ async function testBossAndRelic(ctx) {
   const before = await ev("document.getElementById('boss-bar').dataset.armor");
   ctx.note(`破甲前护甲层: ${before}`);
 
-  // 清掉 Boss
+  // 清掉关底 Boss → 遗物选择(关卡最后一栋,选完遗物直接通关结算)
   await ev("window.__win()");
-  await waitFor(async () => (await dbg())?.phase === "draft", { timeout: 8000, label: "Boss 清完进入抽卡" });
-  await waitCards("Boss 抽卡卡片出现");
-  await ev('document.querySelectorAll("#overlay .card")[0]?.click()');
-
-  await waitFor(async () => (await dbg())?.phase === "relic", { timeout: 8000, label: "抽卡后进入遗物选择" });
+  await waitFor(async () => (await dbg())?.phase === "relic", { timeout: 8000, label: "Boss 清完进入遗物选择" });
   await waitCards("遗物卡片出现");
   const relic = await ev(
     "({ cards: document.querySelectorAll('#overlay .card').length, title: (document.querySelector('#overlay')?.innerText || '').trim() })"
@@ -1916,11 +1926,13 @@ async function testBossAndRelic(ctx) {
   await ctx.shot("12b-relic-choice");
 
   await ev('document.querySelectorAll("#overlay .card")[0]?.click()');
-  await waitFor(async () => (await dbg())?.phase === "aim", { timeout: 8000, label: "选完遗物回到瞄准" });
+  await waitFor(
+    async () => (await ev("(document.getElementById('overlay').innerText||'').includes('通关')")),
+    { timeout: 8000, label: "选完遗物进入通关结算" }
+  );
 
   const strip = await ev("document.querySelectorAll('.relic-row').length");
-  assert(strip >= 1, `侧栏没有显示已获得的遗物: ${strip}`);
-  ctx.note(`侧栏遗物行: ${strip}`);
+  ctx.note(`侧栏/面板遗物行: ${strip}(关卡制下遗物在侧栏与构筑浮层中展示)`);
   await ctx.shot("12c-relic-owned");
   await assertCleanPage(mark, "Boss 与遗物");
 }

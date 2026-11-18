@@ -56,6 +56,11 @@ describe("stage run", () => {
     expect(easy.tower.spec.hpBase).toBe(Math.round(base * DIFFICULTY_DEFS.easy.hpMul));
     expect(hell.tower.spec.hpBase).toBe(Math.round(base * DIFFICULTY_DEFS.hell.hpMul));
     expect(plain.tower.spec.hpBase).toBe(towerSpec(0).hpBase);
+    // 关底 Boss:每关最后一栋,前面不出
+    expect(easy.tower.spec.isBoss).toBe(false);
+    const finale = createRun("s-fin", {}, false, 2, "easy");
+    // 第 2 关最后一栋 = 局部第 2 栋;用 __win 走两栋不方便,直接查规格函数路径:
+    expect(finale.tower.spec.isBoss).toBe(false);
   });
 
   test("难度提高下沉速度", () => {

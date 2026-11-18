@@ -237,6 +237,8 @@ function stageTowerSpec(
   const base = towerSpec(index);
   return {
     ...base,
+    // 关底 Boss:关卡内只在最后一栋出镇站巨楼(无尽/每日仍按全局每 5 栋)。
+    isBoss: localIdx === STAGE_TOWERS - 1,
     hpBase: Math.max(1, Math.round(base.hpBase * def.hpMul)),
     descendMul: def.descendMul,
     kindIndex: index + def.kindShift,
@@ -685,10 +687,17 @@ export function updateRun(run: Run, frameDt: number): void {
     run.collapseT += dt;
     if (run.collapseT >= COLLAPSE_TIME) {
       run.stats.towersCleared += 1;
-      // 关卡制:打穿本关全部楼 → 通关(victory),主循环交给结算。
+      // 关卡制:打穿本关全部楼 → 通关。关底 Boss 的遗物在结算前可选。
       if (run.stage != null && run.stats.towersCleared >= STAGE_TOWERS) {
         run.pendingCollapse = false;
-        run.phase = "victory";
+        if (run.tower.spec.isBoss) {
+          run.relicOptions = rollRelics(run.relics, run.rng);
+        }
+        if (run.relicOptions.length > 0) {
+          run.phase = "relic";
+        } else {
+          run.phase = "victory";
+        }
         return;
       }
       // Boss 掉遗物：先抽卡，选完卡再挑遗物（顺序固定，便于存档还原）
@@ -807,7 +816,11 @@ export function pickRelic(run: Run, id: string): boolean {
   const gift = relicGift(id);
   if (gift.shields) run.shields += gift.shields;
   run.relicOptions = [];
-  run.tower = createTower(nextTowerSpec(run), run.rng);
+  if (run.stage != null && run.stats.towersCleared >= STAGE_TOWERS) {
+    run.phase = "victory";
+    return true;
+  }
+  spawnNextTower(run);
   run.phase = "aim";
   return true;
 }

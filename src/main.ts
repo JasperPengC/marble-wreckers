@@ -496,6 +496,11 @@ function endRun(abandon: boolean): void {
   updateHUD();
   updateBuild();
   if (abandon) {
+    // 关卡制:撤退也走失败结算(显示已获灵石 + 重试/选关);无尽/每日维持旧行为。
+    if (finished.stage != null && finished.difficulty != null) {
+      showDeath(finished, newAch, prevRecord);
+      return;
+    }
     setNotice(`${t("death.coins")} +${fmtNum(finished.coins)}`);
     showMenu();
     return;

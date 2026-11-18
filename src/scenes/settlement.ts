@@ -152,7 +152,10 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
           : null,
         h(
           "button",
-          { class: "btn btn--ghost", onclick: () => input.onBack() },
+          {
+            class: "btn btn--ghost",
+            onclick: () => (input.onStages ? input.onStages() : input.onBack()),
+          },
           icon("home"),
           input.onStages ? t("stages.backToStages") : t("death.menu")
         )

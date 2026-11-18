@@ -61,7 +61,11 @@ export function createStagesScene(shell: SceneShell, t: Translate) {
           ),
           h(
             "span",
-            { class: "stage-diff__power" },
+            {
+              class:
+                "stage-diff__power" +
+                (input.power < stagePowerFor(stage, diff) ? " stage-diff__power--low" : ""),
+            },
             t("stages.recommend") + " " + fmtNum(stagePowerFor(stage, diff))
           )
         );

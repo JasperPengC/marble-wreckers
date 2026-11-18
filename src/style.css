@@ -6585,3 +6585,10 @@ body,
 }
 
 .card--grade-S { border-color: rgba(224, 140, 76, 0.9) !important; }
+
+/* 战力低于推荐:提示该档难度有吃力 */
+.stage-diff__power--low {
+  color: #ff7a5f;
+  opacity: 1;
+  font-weight: 800;
+}

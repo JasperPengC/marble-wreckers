@@ -191,7 +191,7 @@ export interface QuestDef {
 /** 每日任务:按天重置,进度来自当日累计计数。 */
 export const DAILY_QUESTS: QuestDef[] = [
   { id: "daily-towers", name: "拆迁达人", desc: "拆掉 3 栋楼", goal: 3, reward: 150 },
-  { id: "daily-gems", name: "日进斗金", desc: "获得 600 灵石", goal: 600, reward: 200 },
+  { id: "daily-gems", name: "日进斗金", desc: "获得 400 灵石", goal: 400, reward: 200 },
   { id: "daily-stage", name: "稳步推进", desc: "通关 1 次任意关卡", goal: 1, reward: 300 },
 ];
 
