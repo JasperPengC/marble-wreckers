@@ -3,7 +3,13 @@
  * 星标 = 该难度已通关;未解锁的关卡/难度置灰。
  */
 
-import { MAX_STAGE, DIFFICULTIES, DIFFICULTY_DEFS, stagePowerFor, type Difficulty } from "../game/stage.ts";
+import {
+  MAX_STAGE,
+  DIFFICULTIES,
+  stageClearReward,
+  stagePowerFor,
+  type Difficulty,
+} from "../game/stage.ts";
 import type { MetaSave, StageRecord } from "../game/meta.ts";
 import { icon } from "../ui/icons.ts";
 import { fmtNum, h } from "../ui/overlays.ts";
@@ -77,13 +83,19 @@ export function createStagesScene(shell: SceneShell, t: Translate) {
               "span",
               { class: "stage-card__stars" },
               ...Array.from({ length: 3 }, (_, i) =>
-                h("i", { class: "stage-card__star" + (i < starCount ? " stage-card__star--on" : "") })
+                h(
+                  "i",
+                  { class: "stage-card__star" + (i < starCount ? " stage-card__star--on" : "") },
+                  "★"
+                )
               )
             ),
             h(
               "span",
               { class: "stage-card__reward" },
-              (DIFFICULTY_DEFS.hell.rewardMul * 200).toFixed(0) + " " + t("hud.coins")
+              t("stages.clearReward", {
+                n: fmtNum(stageClearReward(stage, "hell")),
+              })
             )
           ),
           unlocked

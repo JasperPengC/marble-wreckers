@@ -2140,237 +2140,201 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         ? 0.6
         : 0.5 + 0.5 * Math.sin(time * 5.2)
       : 0;
+    const OUTLINE = "rgba(16,22,34,0.9)";
 
-    // --- soft contact shadow on the wet floor
-    const shadow = ctx.createRadialGradient(cx, cy + 17, 2, cx, cy + 17, 38);
+    // --- soft contact shadow on the floor
+    const shadow = ctx.createRadialGradient(cx, cy + 17, 2, cx, cy + 17, 40);
     shadow.addColorStop(0, "rgba(0,0,0,0.5)");
     shadow.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = shadow;
     ctx.beginPath();
-    ctx.ellipse(cx, cy + 17, 34, 10, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy + 17, 36, 10, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // --- tiered base plate (stays level while the turret aims)
-    ctx.fillStyle = linGrad(ctx, cx - 28, 0, cx + 28, 0, [
-      [0, dark ? "#3b4a5e" : "#7d8ea4"],
-      [0.42, dark ? "#6e819b" : "#bccadb"],
-      [1, dark ? "#2b3748" : "#6b7c92"],
+    // --- 卡通底座:圆角平台 + 黄黑警示条
+    ctx.fillStyle = linGrad(ctx, cx - 30, 0, cx + 30, 0, [
+      [0, dark ? "#2e3c55" : "#8fa6c2"],
+      [0.45, dark ? "#5d7194" : "#d5e2f2"],
+      [1, dark ? "#233048" : "#7790b2"],
     ]);
+    roundRectOn(ctx, cx - 30, cy + 2, 60, 15, 7);
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    roundRectOn(ctx, cx - 30, cy + 2, 60, 15, 7);
+    ctx.stroke();
+    // Hazard stripes clipped to the platform.
+    ctx.save();
+    roundRectOn(ctx, cx - 27, cy + 5, 54, 9, 5);
+    ctx.clip();
+    ctx.fillStyle = "rgba(255,193,61,0.85)";
+    ctx.fillRect(cx - 27, cy + 5, 54, 9);
+    ctx.fillStyle = "rgba(24,30,44,0.85)";
+    for (let x = cx - 27; x < cx + 27; x += 12) {
+      ctx.beginPath();
+      ctx.moveTo(x, cy + 14);
+      ctx.lineTo(x + 6, cy + 14);
+      ctx.lineTo(x + 12, cy + 5);
+      ctx.lineTo(x + 6, cy + 5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.28)";
+    ctx.fillRect(cx - 27, cy + 5, 54, 1.6);
+    ctx.restore();
+
+    // --- Q 版拆迁队员(站在炮身后侧,随瞄准方向侧头)
+    const look = run.aimAngle === 0 ? 0 : run.aimAngle > 0 ? 1 : -1;
+    const px = cx - 19;
+    const bob = palette.reducedMotion ? 0 : Math.sin(time * 3.1) * 1.1;
+    // 身体(橙色工装)
+    ctx.fillStyle = linGrad(ctx, px - 8, 0, px + 8, 0, [
+      [0, dark ? "#d97a3c" : "#ff9d5c"],
+      [1, dark ? "#a3521f" : "#e07a35"],
+    ]);
+    roundRectOn(ctx, px - 8, cy - 14 + bob, 16, 17, 6);
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    roundRectOn(ctx, px - 8, cy - 14 + bob, 16, 17, 6);
+    ctx.stroke();
+    // 反光背心条纹
+    ctx.fillStyle = "rgba(255,236,150,0.9)";
+    ctx.fillRect(px - 6, cy - 6 + bob, 12, 3);
+    ctx.fillStyle = "rgba(255,236,150,0.55)";
+    ctx.fillRect(px - 6, cy - 1.6 + bob, 12, 2);
+    // 头
+    const headY = cy - 22 + bob;
+    ctx.fillStyle = "#ffd9b0";
     ctx.beginPath();
-    ctx.moveTo(cx - 28, cy + 18);
-    ctx.lineTo(cx - 23, cy + 5);
-    ctx.lineTo(cx + 23, cy + 5);
-    ctx.lineTo(cx + 28, cy + 18);
+    ctx.arc(px, headY, 7.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // 安全帽(黄) + 帽檐
+    ctx.fillStyle = "#ffcf4d";
+    ctx.beginPath();
+    ctx.arc(px, headY - 1.4, 7.6, Math.PI, 0);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.5)";
-    ctx.lineWidth = 1.1;
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
     ctx.stroke();
-    // Top deck.
-    ctx.fillStyle = linGrad(ctx, cx - 24, cy, cx + 24, cy, [
-      [0, dark ? "#4b5b70" : "#93a3b7"],
-      [0.5, dark ? "#8496af" : "#d0dcea"],
-      [1, dark ? "#3a485c" : "#7b8ca2"],
-    ]);
-    roundRectOn(ctx, cx - 24, cy + 1, 48, 6.5, 2.4);
+    roundRectOn(ctx, px - 9.6, headY - 1.8, 19.2, 3.2, 1.6);
+    ctx.fillStyle = "#ffcf4d";
     ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.lineWidth = 0.9;
-    roundRectOn(ctx, cx - 24, cy + 1, 48, 6.5, 2.4);
     ctx.stroke();
-    ctx.fillStyle = "rgba(255,255,255,0.22)";
-    ctx.fillRect(cx - 21, cy + 1.6, 42, 1.2);
-    // Amber energy conduit along the base.
-    ctx.fillStyle = "rgba(224,182,76,0.6)";
-    ctx.fillRect(cx - 20, cy + 15.2, 40, 1.5);
-    ctx.fillStyle = "rgba(255,236,180,0.35)";
-    ctx.fillRect(cx - 20, cy + 15.2, 40, 0.6);
-    // Bolts.
-    for (const bx of [cx - 19, cx + 19]) {
-      ctx.fillStyle = "rgba(16,22,32,0.75)";
-      ctx.beginPath();
-      ctx.arc(bx, cy + 11.4, 2.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(255,255,255,0.25)";
-      ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.arc(bx - 0.4, cy + 11, 1.4, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    roundRectOn(ctx, px - 3.4, headY - 8.6, 6.8, 2.6, 1.3);
+    ctx.fill();
+    // 眼睛看向瞄准方向 + 红晕
+    ctx.fillStyle = "#26202a";
+    ctx.beginPath();
+    ctx.arc(px + 2.4 + look * 1.6, headY + 1.6, 1.25, 0, Math.PI * 2);
+    ctx.arc(px - 2.2 + look * 1.6, headY + 1.6, 1.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,120,110,0.5)";
+    ctx.beginPath();
+    ctx.arc(px - 5 + look, headY + 3.4, 1.5, 0, Math.PI * 2);
+    ctx.arc(px + 5 + look, headY + 3.4, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    // 手臂扶着炮枢轴
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 3.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(px + 6, cy - 8 + bob);
+    ctx.lineTo(cx - 7, cy - 6);
+    ctx.stroke();
+    ctx.lineCap = "butt";
 
-    // --- turret, rotated to the aim angle (0 = straight up)
+    // --- 卡通炮身(随瞄准旋转)
     ctx.save();
     ctx.translate(cx, cy - 1);
     ctx.rotate(run.aimAngle);
     ctx.translate(0, kick);
 
-    // Rear counterweight housing.
-    ctx.fillStyle = linGrad(ctx, -14, 0, 14, 0, [
-      [0, dark ? "#2b3546" : "#5f6f84"],
-      [0.45, dark ? "#465871" : "#8fa0b6"],
-      [1, dark ? "#222b3a" : "#4d5c70"],
+    // 炮管:粗短圆润,上亮下暗
+    ctx.fillStyle = linGrad(ctx, -9, 0, 9, 0, [
+      [0, dark ? "#5a6d8f" : "#8ca6c9"],
+      [0.3, dark ? "#93a9cc" : "#cfe0f4"],
+      [1, dark ? "#39496b" : "#6482ab"],
     ]);
-    roundRectOn(ctx, -14, -2, 28, 14, 5);
+    roundRectOn(ctx, -9, -32, 18, 30, 8);
     ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.45)";
-    ctx.lineWidth = 1;
-    roundRectOn(ctx, -14, -2, 28, 14, 5);
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    roundRectOn(ctx, -9, -32, 18, 30, 8);
     ctx.stroke();
-    // Housing top edge light.
-    ctx.fillStyle = "rgba(255,255,255,0.18)";
-    ctx.fillRect(-12, -1.6, 24, 1.2);
-    // Cooling vents on the housing.
-    ctx.fillStyle = "rgba(10,14,20,0.5)";
-    for (let i = 0; i < 3; i++) {
-      ctx.fillRect(-9 + i * 7, 5.2, 4, 1.4);
-    }
-
-    // Barrel (tapered, lit from the upper-left).
-    ctx.fillStyle = linGrad(ctx, -8.5, 0, 8.5, 0, [
-      [0, dark ? "#33415a" : "#5f7089"],
-      [0.22, dark ? "#8497b0" : "#c6d6e8"],
-      [0.55, dark ? "#6b7e99" : "#a6b8cd"],
-      [0.85, dark ? "#3c4c62" : "#6c7d93"],
-      [1, dark ? "#26303f" : "#4c5b6f"],
+    // 炮口箍
+    ctx.fillStyle = linGrad(ctx, -10.5, 0, 10.5, 0, [
+      [0, dark ? "#31415f" : "#7291bb"],
+      [0.4, dark ? "#a3b8d8" : "#e6f0fb"],
+      [1, dark ? "#26344e" : "#5c78a4"],
     ]);
-    ctx.beginPath();
-    ctx.moveTo(-8.6, -2);
-    ctx.lineTo(-6.6, -27.5);
-    ctx.quadraticCurveTo(-6.2, -29, -4.4, -29);
-    ctx.lineTo(4.4, -29);
-    ctx.quadraticCurveTo(6.2, -29, 6.6, -27.5);
-    ctx.lineTo(8.6, -2);
-    ctx.closePath();
+    roundRectOn(ctx, -10.5, -37.5, 21, 10, 5);
     ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.45)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 2;
+    roundRectOn(ctx, -10.5, -37.5, 21, 10, 5);
     ctx.stroke();
-    // Barrel bands + rivets.
-    for (const by of [-21.5, -14]) {
-      ctx.fillStyle = "rgba(8,12,18,0.42)";
-      ctx.fillRect(-8, by, 16, 1.5);
-      ctx.fillStyle = "rgba(255,255,255,0.16)";
-      ctx.fillRect(-8, by + 1.5, 16, 0.7);
-    }
-    // Sight ticks along both flanks.
-    ctx.fillStyle = "rgba(255,255,255,0.55)";
-    for (const ty of [-10.5, -13, -24]) {
-      ctx.fillRect(-10.4, ty, 2.4, 0.9);
-      ctx.fillRect(8, ty, 2.4, 0.9);
-    }
-
-    // Muzzle brake.
-    ctx.fillStyle = linGrad(ctx, -11, 0, 11, 0, [
-      [0, dark ? "#3a4a60" : "#6b7c93"],
-      [0.4, dark ? "#a2b6cd" : "#e4eefa"],
-      [1, dark ? "#2f3c4f" : "#5b6b80"],
-    ]);
-    roundRectOn(ctx, -11, -35, 22, 8.5, 2.6);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.45)";
-    ctx.lineWidth = 1;
-    roundRectOn(ctx, -11, -35, 22, 8.5, 2.6);
-    ctx.stroke();
-    // Brake vents.
-    ctx.fillStyle = "rgba(8,12,20,0.55)";
-    ctx.fillRect(-9.5, -32.6, 19, 1.3);
-    ctx.fillRect(-9.5, -29.6, 19, 1.3);
-    ctx.fillStyle = "rgba(255,255,255,0.2)";
-    ctx.fillRect(-9, -33.8, 18, 0.8);
-    // Muzzle bore.
-    ctx.fillStyle = "#080b12";
+    // 炮口
+    ctx.fillStyle = "#0a0f1c";
     ctx.beginPath();
-    ctx.ellipse(0, -34.5, 6.2, 2.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -36.5, 6.4, 2.6, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "rgba(224,182,76,0.85)";
+    ctx.fillStyle = "rgba(224,182,76,0.9)";
     ctx.beginPath();
-    ctx.ellipse(0, -34.5, 3.9, 1.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -36.5, 4, 1.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 炮身上高光条
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
+    roundRectOn(ctx, -5.4, -29, 3, 22, 1.5);
+    ctx.fill();
+    // 铆钉
+    ctx.fillStyle = "rgba(16,22,34,0.85)";
+    ctx.beginPath();
+    ctx.arc(-5.5, -5.5, 1.3, 0, Math.PI * 2);
+    ctx.arc(5.5, -5.5, 1.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Aiming charge: energy gathers in the bore.
+    // 瞄准充能:炮口聚能(保留)
     if (charge > 0) {
-      blitGlow(glowAccent, 0, -35.5, 28 + charge * 14, 0.16 + charge * 0.28);
+      blitGlow(glowAccent, 0, -37, 30 + charge * 14, 0.16 + charge * 0.28);
       ctx.strokeStyle = `rgba(255,214,130,${0.3 + charge * 0.4})`;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.arc(0, -34.5, 7.6 + charge * 2.6, Math.PI * 0.12, Math.PI * 0.88);
+      ctx.arc(0, -36.5, 8 + charge * 2.6, Math.PI * 0.12, Math.PI * 0.88);
       ctx.stroke();
-      // Charging motes converging into the muzzle.
       if (!palette.reducedMotion) {
         for (let i = 0; i < 3; i++) {
           const a = time * 3.4 + (i * Math.PI * 2) / 3;
           const rad = 12 + Math.sin(time * 6 + i) * 2;
           ctx.fillStyle = "rgba(255,226,160,0.7)";
           ctx.beginPath();
-          ctx.arc(Math.cos(a) * rad * 0.5, -34.5 - Math.abs(Math.sin(a)) * rad * 0.4, 0.9, 0, Math.PI * 2);
+          ctx.arc(Math.cos(a) * rad * 0.5, -36.5 - Math.abs(Math.sin(a)) * rad * 0.4, 0.9, 0, Math.PI * 2);
           ctx.fill();
         }
       }
     }
-
-    // Muzzle flash.
-    if (muzzleT > 0) {
-      const strength = muzzleT / 0.09;
-      ctx.save();
-      ctx.globalCompositeOperation = "lighter";
-      blitGlow(glowAccent, 0, -36, 36 + strength * 34, strength * 0.9);
-      ctx.fillStyle = `rgba(255,242,196,${0.9 * strength})`;
-      // Main jet.
-      ctx.beginPath();
-      ctx.moveTo(-4, -35);
-      ctx.lineTo(0, -35 - 30 * strength);
-      ctx.lineTo(4, -35);
-      ctx.closePath();
-      ctx.fill();
-      // Side jets.
-      for (const s of [-1, 1]) {
-        ctx.save();
-        ctx.rotate(s * 0.44);
-        ctx.beginPath();
-        ctx.moveTo(-2.6, -35);
-        ctx.lineTo(0, -35 - 16 * strength);
-        ctx.lineTo(2.6, -35);
-        ctx.closePath();
-        ctx.fill();
-        ctx.restore();
-      }
-      ctx.restore();
-    }
-
-    // Turret core gem with a warm glow.
-    blitGlow(glowAccent, 0, 4, 20, 0.22 + charge * 0.12);
-    const gem = ctx.createRadialGradient(-1.5, 3.2, 0.4, 0, 5, 5.6);
-    gem.addColorStop(0, "#fff8d8");
-    gem.addColorStop(0.45, palette.accent);
-    gem.addColorStop(1, "#6f470a");
-    ctx.fillStyle = gem;
-    ctx.beginPath();
-    ctx.arc(0, 5, 5.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.45)";
-    ctx.lineWidth = 0.9;
-    ctx.stroke();
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
-    ctx.beginPath();
-    ctx.ellipse(-1.7, 3.2, 1.5, 0.95, -0.5, 0, Math.PI * 2);
-    ctx.fill();
     ctx.restore();
 
-    // --- ball count readout on a small pill
+    // 弹珠计数胶囊(保留)
     const label = `● ×${run.mods.balls}`;
-    ctx.font = "700 11px system-ui, sans-serif";
+    ctx.font = "800 11px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const tw = ctx.measureText(label).width + 16;
-    ctx.fillStyle = dark ? "rgba(6,10,18,0.66)" : "rgba(255,255,255,0.62)";
-    roundRectOn(ctx, cx - tw / 2, cy + 22.5, tw, 15.5, 7.75);
+    const tw = ctx.measureText(label).width + 18;
+    ctx.fillStyle = dark ? "rgba(10,14,26,0.78)" : "rgba(255,255,255,0.75)";
+    roundRectOn(ctx, cx - tw / 2, cy + 21.5, tw, 16, 8);
     ctx.fill();
-    ctx.strokeStyle = dark ? "rgba(255,255,255,0.10)" : "rgba(40,54,74,0.16)";
-    ctx.lineWidth = 0.8;
-    roundRectOn(ctx, cx - tw / 2, cy + 22.5, tw, 15.5, 7.75);
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = 1.6;
+    roundRectOn(ctx, cx - tw / 2, cy + 21.5, tw, 16, 8);
     ctx.stroke();
     ctx.fillStyle = palette.text;
-    ctx.fillText(label, cx, cy + 30.4);
+    ctx.fillText(label, cx, cy + 29.6);
     ctx.textBaseline = "alphabetic";
   }
 
@@ -2384,18 +2348,18 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
           break;
         }
         case "hit": {
-          hitFlash = Math.min(1, hitFlash + (event.crit ? 0.1 : 0.03));
-          spawnSparks(event.x, event.y, event.crit ? palette.accent : "#ffe9c9", event.crit ? 12 : 4, 70);
+          hitFlash = Math.min(1, hitFlash + (event.crit ? 0.14 : 0.04));
+          spawnSparks(event.x, event.y, event.crit ? palette.accent : "#ffe9c9", event.crit ? 18 : 7, 85);
           rings.push({
             x: event.x,
             y: event.y,
-            life: 0.22,
-            maxLife: 0.22,
-            radius: event.crit ? 26 : 14,
-            color: event.crit ? palette.accent : "rgba(255,255,255,0.7)",
-            width: 2,
+            life: 0.24,
+            maxLife: 0.24,
+            radius: event.crit ? 32 : 17,
+            color: event.crit ? palette.accent : "rgba(255,255,255,0.8)",
+            width: event.crit ? 3 : 2.2,
           });
-          if (event.crit) shake = Math.min(3, shake + 0.6);
+          if (event.crit) shake = Math.min(3, shake + 0.7);
           break;
         }
         case "destroy": {
@@ -2531,6 +2495,20 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         case "death": {
           flash = 1;
           shake = 5;
+          break;
+        }
+        case "bossappear": {
+          shake = Math.min(4.5, shake + 2.6);
+          flash = Math.min(1, flash + 0.55);
+          rings.push({
+            x: W / 2,
+            y: TOWER_TOP + 60,
+            life: 0.6,
+            maxLife: 0.6,
+            radius: 150,
+            color: "rgba(255,110,90,0.9)",
+            width: 6,
+          });
           break;
         }
         case "bosskill": {

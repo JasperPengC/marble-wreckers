@@ -342,10 +342,14 @@ function announceTower(): void {
   lastShields = run.shields;
   const spec = run.tower.spec;
   const stagePrefix = run.stage != null ? `第 ${run.stage} 关 · ` : "";
-  showBanner(
-    stagePrefix + "第 " + (run.stats.towersCleared + 1) + " 栋",
-    spec.isBoss ? "镇站巨楼 · 打掉核心即捣毁" : "清空整栋楼 · 抽一次强化"
-  );
+  if (spec.isBoss) {
+    showBanner("⚠ 镇站巨楼来袭!", stagePrefix + "打穿护甲 · 捣毁核心", "danger");
+  } else {
+    showBanner(
+      stagePrefix + "第 " + (run.stats.towersCleared + 1) + " 栋",
+      "清空整栋楼 · 抽一次强化"
+    );
+  }
 }
 
 function updateHUD(): void {

@@ -92,6 +92,7 @@ export type FxEvent =
   | { type: "blast"; x: number; y: number; radius: number }
   | { type: "status"; x: number; y: number; kind: "burn" | "poison" }
   | { type: "heal"; x: number; y: number }
+  | { type: "bossappear" }
   | { type: "shield" }
   | { type: "collapse" }
   | { type: "death" }
@@ -240,6 +241,14 @@ function stageTowerSpec(
     descendMul: def.descendMul,
     kindIndex: index + def.kindShift,
   };
+}
+
+/** 生成下一栋楼;Boss 楼附带出场演出 fx。 */
+function spawnNextTower(run: Run): void {
+  run.tower = createTower(nextTowerSpec(run), run.rng);
+  if (run.tower.spec.isBoss) {
+    fx(run, { type: "bossappear" });
+  }
 }
 
 /** 下一栋楼的规格(全局序号连续推进)。 */
@@ -705,7 +714,7 @@ export function updateRun(run: Run, frameDt: number): void {
         if (run.relicOptions.length > 0) {
           run.phase = "relic";
         } else {
-          run.tower = createTower(nextTowerSpec(run), run.rng);
+          spawnNextTower(run);
           run.phase = "aim";
         }
       } else {
@@ -783,7 +792,7 @@ export function pickUpgrade(run: Run, id: string): boolean {
     run.phase = "relic";
     return true;
   }
-  run.tower = createTower(nextTowerSpec(run), run.rng);
+  spawnNextTower(run);
   run.phase = "aim";
   return true;
 }

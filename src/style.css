@@ -6403,15 +6403,15 @@ body,
 }
 
 .stage-card__star {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: rgba(128, 140, 160, 0.25);
+  font-style: normal;
+  font-size: 15px;
+  line-height: 1;
+  color: rgba(128, 140, 160, 0.3);
 }
 
 .stage-card__star--on {
-  background: var(--accent);
-  box-shadow: 0 0 8px rgba(224, 182, 76, 0.6);
+  color: var(--accent);
+  text-shadow: 0 0 8px rgba(224, 182, 76, 0.6);
 }
 
 .stage-card__reward {
@@ -6580,3 +6580,14 @@ body,
 .quest-milestone {
   margin-top: 22px;
 }
+
+
+/* 卡通卡片:厚描边 + 硬底边 */
+.card {
+  border-width: 2px !important;
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+.card--grade-S { border-color: rgba(224, 140, 76, 0.9) !important; }
