@@ -145,7 +145,7 @@ async function overlayState() {
       "  if (!overlay) return { missing: true };\n" +
       "  return {\n" +
       "    hidden: overlay.hidden,\n" +
-      "    title: (overlay.querySelector('.overlay__title, .scene__title')?.textContent || '').trim(),\n" +
+      "    title: (overlay.querySelector('.overlay__title, .scene__title, .pause-card__title')?.textContent || '').trim(),\n" +
       "    subtitle: (overlay.querySelector('.overlay__subtitle, .scene__meta')?.textContent || '').trim(),\n" +
       "    cards: [...overlay.querySelectorAll('.card')].map((card) => (card.textContent || '').trim().slice(0, 100)),\n" +
       "    stats: [...overlay.querySelectorAll('.overlay__stat')].map((stat) => (stat.textContent || '').trim()),\n" +
