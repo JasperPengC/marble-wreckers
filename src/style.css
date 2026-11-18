@@ -5995,10 +5995,11 @@ body,
   margin-bottom: 14px;
 }
 
-/* Records: four small frosted stat cards in one row (was a 2x2 plate). */
-.overlay--title .records {
+/* Records: a bare stat strip — label over value, hairline dividers, no cards.
+   :root prefix lifts specificity above the old light-theme plate rules. */
+:root .overlay--title .records {
   display: flex;
-  gap: 8px;
+  gap: 0;
   width: min(430px, 100%);
   padding: 0;
   border: 0;
@@ -6015,14 +6016,15 @@ body,
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 9px 6px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel-2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  box-shadow: none;
   text-align: center;
+}
+
+.records__cell + .records__cell {
+  border-left: 1px solid var(--panel-border);
 }
 
 .records__cell .records__label {
@@ -6030,14 +6032,20 @@ body,
   letter-spacing: 0.08em;
   opacity: 0.62;
   white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
 .records__cell b {
   font-size: 16px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
-:root[data-theme="light"] .records__cell {
-  box-shadow: 0 4px 14px rgba(40, 52, 76, 0.16);
+:root[data-theme="light"] .records__cell .records__label {
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="light"] .records__cell b {
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.9);
 }
 
 /* Start: a confident pill; the coin caption wraps to a line under the label. */
@@ -6100,7 +6108,8 @@ body,
   align-items: stretch;
   gap: 2px;
   width: min(480px, 100%);
-  padding: 6px 6px calc(6px + var(--safe-area-bottom));
+  padding: 6px calc(6px + var(--safe-area-right)) calc(6px + var(--safe-area-bottom))
+    calc(6px + var(--safe-area-left));
   border-top: 1px solid var(--panel-border);
   border-radius: 16px 16px 0 0;
   background: var(--panel-strong-2);
