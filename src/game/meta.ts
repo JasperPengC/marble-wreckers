@@ -510,6 +510,8 @@ export function applyRunResult(
     victory?: boolean;
   }
 ): string[] {
+  // 跨天首局:先把每日任务桶滚到今天,再累计(保证日期一致)。
+  ensureDailyQuests(meta, opts.dailyDate);
   meta.coins += Math.floor(opts.coins);
   meta.totalBricks += opts.bricks;
   meta.totalRuns += 1;
