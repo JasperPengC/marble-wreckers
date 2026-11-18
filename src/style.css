@@ -6211,3 +6211,129 @@ body,
   top: calc(var(--safe-area-top) + 48px);
   padding-top: 0;
 }
+
+/* =========================================================================
+   v13 — 场景全屏化 + 标题栏内嵌「?」+ Dock 视觉重做
+   ========================================================================= */
+
+/* 场景铺满舞台：去掉 overlay 的左右内边距（标题屏保留自己的 20px）。 */
+.overlay:not(.overlay--title) {
+  padding-inline: 0;
+}
+
+/* 标题栏不再是卡片：直角、通栏、去掉警戒条纹接缝。 */
+.overlay .scene {
+  border-radius: 0;
+}
+
+.scene__bar::after {
+  display: none;
+}
+
+/* 标题栏右侧的「?」：玩法说明入口，取代旧的右上悬浮问号钮。 */
+.scene__help {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-2);
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.scene__help svg {
+  width: 17px;
+  height: 17px;
+}
+
+.scene__help:active {
+  transform: scale(0.94);
+}
+
+/* Dock:悬浮圆角胶囊条 + 金色调方形图标座。 */
+.dock {
+  margin-top: auto;
+  margin-bottom: calc(var(--safe-area-bottom) + 10px);
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  width: min(430px, 100%);
+  padding: 8px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  background: var(--panel-strong-2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.dock__item {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+  color: var(--primary);
+}
+
+.dock__item:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dock__item .menu-item__medal {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(224, 182, 76, 0.12);
+  box-shadow: none;
+  color: var(--accent);
+}
+
+.dock__item .menu-item__medal svg {
+  width: 20px;
+  height: 20px;
+}
+
+.dock__item .menu-item__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.82;
+  white-space: nowrap;
+}
+
+:root[data-theme="light"] .dock {
+  box-shadow: 0 12px 32px rgba(40, 52, 76, 0.16);
+}
+
+:root[data-theme="light"] .dock__item:active {
+  background: rgba(20, 34, 62, 0.06);
+}
+
+:root[data-theme="light"] .dock__item .menu-item__medal {
+  background: rgba(168, 116, 18, 0.1);
+  color: #a97f22;
+}
+
+/* 齿轮悬浮钮跟着新 Dock 上移一档。 */
+.fab--menu {
+  bottom: calc(var(--safe-area-bottom) + 100px);
+}

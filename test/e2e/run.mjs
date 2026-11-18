@@ -1318,13 +1318,13 @@ async function testGameUI(ctx) {
   const mark = pageErrors.mark();
   await openFreshPage("游戏化 UI");
 
-  // a) 菜单里的 #help → 玩法说明（怎么玩 / 砖块图鉴 / 灵石与成长 / 快捷键）
-  const helpButton = await elementCenter("#help");
+  // a) 菜单 Dock「玩法说明」→ 玩法说明（怎么玩 / 砖块图鉴 / 灵石与成长 / 快捷键）
+  const helpButton = await elementCenter("#overlay .dock__item:last-child");
   assert(
     !helpButton.missing && !helpButton.hidden && helpButton.width > 0 && helpButton.height > 0,
-    `菜单缺少可见的 #help 按钮: ${brief(helpButton)}`
+    `Dock 缺少可见的「玩法说明」入口: ${brief(helpButton)}`
   );
-  await clickSelector("#help");
+  await clickSelector("#overlay .dock__item:last-child");
   const helpState = await waitFor(
     async () => {
       const state = await overlayState();

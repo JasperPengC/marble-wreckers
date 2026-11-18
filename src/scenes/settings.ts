@@ -6,7 +6,8 @@ import type { SceneShell, Translate } from "./types.ts";
 export interface SettingsSceneInput {
   settings: Readonly<PlayerSettings>;
   savedAt?: string;
-  origin: string;
+  /** 主题「自动」档的文案：快应用跟随论坛，普通网页跟随系统。 */
+  themeFollowLabel: string;
   onChange(patch: Partial<PlayerSettings>): void;
   onReset(): void;
   onExport(): string;
@@ -76,7 +77,11 @@ export function createSettingsScene(shell: SceneShell, t: Translate): (input: Se
           },
           label
         )
-      )
+      ).map((node, index) => {
+        // 「自动」档的文案由宿主环境决定（跟随论坛 / 跟随系统）。
+        if (index === 0) node.textContent = input.themeFollowLabel;
+        return node;
+      })
     );
     const locale = h(
       "select",
@@ -181,14 +186,15 @@ export function createSettingsScene(shell: SceneShell, t: Translate): (input: Se
           { class: "help__section" },
           h("div", { class: "help__heading" }, icon("book"), t("settings.about")),
           h("div", { class: "help__note" }, t("settings.aboutText")),
-          h(
-            "div",
-            { class: "help__note" },
-            t("settings.storageInfo", {
-              origin: input.origin,
-              saved: input.savedAt ? new Date(input.savedAt).toLocaleString() : "—",
-            })
-          )
+          ...(input.savedAt
+            ? [
+                h(
+                  "div",
+                  { class: "help__note" },
+                  t("settings.storageInfo", { saved: new Date(input.savedAt).toLocaleString() })
+                ),
+              ]
+            : [])
         ),
       ],
       foot: "",

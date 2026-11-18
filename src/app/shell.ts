@@ -42,6 +42,8 @@ export function createSceneShell(deps: {
   overlay: OverlayManager;
   t: (key: string) => string;
   onHome: () => void;
+  /** 标题栏右侧的「?」入口：任何场景都能随时打开玩法说明。 */
+  onHelp?: () => void;
 }): SceneShell {
   let backHandler: (() => void) | null = null;
   let keyHandler: SceneKeyHandler | null = null;
@@ -69,7 +71,14 @@ export function createSceneShell(deps: {
             )
           : h("span", { class: "scene__back scene__back--ghost" }),
         h("span", { class: "scene__title" }, opts.title),
-        opts.meta ? h("span", { class: "scene__meta" }, opts.meta) : null
+        opts.meta ? h("span", { class: "scene__meta" }, opts.meta) : null,
+        deps.onHelp
+          ? h(
+              "button",
+              { id: "help", class: "scene__help", "aria-label": t("menu.help"), onclick: deps.onHelp },
+              icon("help")
+            )
+          : null
       ),
       h("div", { class: "scene__body" }, ...opts.body),
       opts.foot === ""

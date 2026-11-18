@@ -449,6 +449,7 @@ const shell = createSceneShell({
   overlay,
   t: (key) => t(key),
   onHome: () => showMenu(),
+  onHelp: () => showHelp(),
 });
 
 const shopScene = createShopScene(shell, t);
@@ -651,10 +652,6 @@ window.addEventListener("keyup", (event) => {
   if (event.code === "ArrowRight" || event.code === "KeyD") keys.right = false;
 });
 
-element("help").addEventListener("click", () => {
-  showHelp();
-});
-
 element("pause").addEventListener("click", () => {
   if (paused) resume();
   else pause();
@@ -809,7 +806,7 @@ function showSettings(): void {
   settingsScene({
     settings: meta.settings,
     savedAt: meta.savedAt,
-    origin: location.origin,
+    themeFollowLabel: t(platform === "miniapp" ? "settings.themeAuto" : "settings.themeAutoSystem"),
     onChange: changeSettings,
     onReset: resetProgress,
     onExport: () => JSON.stringify({ meta, run: run ? snapshotRun(run) : null }),
@@ -1171,7 +1168,6 @@ function hydrateIcons(): void {
     node.replaceChildren(icon(node.dataset.icon ?? "help"));
   });
   for (const [idName, iconName, label] of [
-    ["help", "help", t("menu.help")],
     ["pause", "pause", t("pause.button")],
     ["build-fab", "critPower", t("build.title")],
   ] as const) {
