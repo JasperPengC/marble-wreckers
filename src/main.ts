@@ -1189,6 +1189,10 @@ function installDebugHooks(): void {
           coins: run.coins,
           tower: run.tower.spec.index + 1,
           stage: run.stage,
+          launches: run.stats.launches,
+          rerolls: run.draftRerolls,
+          shields: run.shields,
+          cleared: run.stats.towersCleared,
         }
       : { phase: "menu" };
   dbgApi.__step = (frames: number) => {
@@ -1232,6 +1236,8 @@ function installDebugHooks(): void {
   dbgApi.__audio = () => audio.stats();
   dbgApi.__coins = (amount: number) => {
     meta.coins = Math.max(0, Math.floor(amount));
+    // 对局进行中同步设置局内钱包(抽卡重抽等使用 run.coins)
+    if (run) run.coins = Math.max(0, Math.floor(amount));
     void host.save("meta", meta);
     updateHUD();
     updateBuild();
