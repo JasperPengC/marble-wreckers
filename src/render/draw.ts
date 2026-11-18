@@ -207,23 +207,25 @@ const SKYLINE_FAR = { dark: "#111a30", light: "#a8b5c8" };
 
 /** Near skyline parallax band (only this slice can ever be on screen). */
 const NEAR_BAND_H = 186;
-const NEAR_BAND_TOP = H - NEAR_BAND_H;
 /** Ground band: haze + wet asphalt. */
 const GROUND_H = 132;
 const SKYLINE_NEAR = { dark: "#0a0f1e", light: "#8594a9" };
 
-const STARS: Array<{ x: number; y: number; r: number; phase: number; speed: number }> = [];
-{
+/** Stars are re-scattered per background bake: the sky height follows the screen. */
+let STARS: Array<{ x: number; y: number; r: number; phase: number; speed: number }> = [];
+function makeStars(worldH: number): void {
   const rng = makeRng("night-sky");
+  const stars: Array<{ x: number; y: number; r: number; phase: number; speed: number }> = [];
   for (let i = 0; i < 48; i++) {
-    STARS.push({
+    stars.push({
       x: 12 + rng() * (W - 24),
-      y: 12 + rng() * (H * 0.45),
+      y: 12 + rng() * (worldH * 0.45),
       r: 0.6 + rng() * 1.3,
       phase: rng() * Math.PI * 2,
       speed: 0.6 + rng() * 1.6,
     });
   }
+  STARS = stars;
 }
 
 const SKYLINE_NEAR_SEGS: Array<{ x: number; w: number; h: number; roof: number }> = [];
@@ -237,24 +239,26 @@ const SKYLINE_NEAR_SEGS: Array<{ x: number; w: number; h: number; roof: number }
   }
 }
 
-/** Window lights on the near skyline, precomputed. */
-const SKYLINE_LIGHTS: Array<{ x: number; y: number }> = [];
-{
+/** Window lights on the near skyline; y positions follow the world height. */
+let SKYLINE_LIGHTS: Array<{ x: number; y: number }> = [];
+function makeSkylineLights(worldH: number): void {
   const rng = makeRng("window-lights");
+  const lights: Array<{ x: number; y: number }> = [];
   for (const seg of SKYLINE_NEAR_SEGS) {
     const cols = Math.max(1, Math.floor(seg.w / 12));
     const rows = Math.max(1, Math.floor(seg.h / 16));
     for (let c = 0; c < cols; c++) {
       for (let r = 0; r < rows; r++) {
         if (rng() < 0.22) {
-          SKYLINE_LIGHTS.push({
+          lights.push({
             x: seg.x + 4 + c * 12,
-            y: H - 74 - seg.h + 6 + r * 16,
+            y: worldH - 74 - seg.h + 6 + r * 16,
           });
         }
       }
     }
   }
+  SKYLINE_LIGHTS = lights;
 }
 
 /** Deterministic specks for the water-stain material of spam bricks. */
@@ -364,16 +368,17 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   /** Device pixels per logical unit, derived from the real canvas box. */
   let scale = 1;
   /**
-   * The 400x660 playfield floats centred inside the fullscreen canvas; the
-   * margins around it are filled by extended scenery (sky / skyline / ground).
-   * These are the field origin in device px and its logical margins.
+   * The 400x660 playfield stretches with the screen: on portrait canvases the
+   * game coordinate system shifts down by `shiftY` logical px so the cannon
+   * line hugs the screen bottom and the slack becomes sky above the tower.
+   * viewOx/viewOy are the WORLD origin (canvas top-left) in device px; extL/R
+   * are horizontal scenery margins on height-limited (desktop) canvases.
    */
   let viewOx = 0;
   let viewOy = 0;
+  let shiftY = 0;
   let extL = 0;
-  let extT = 0;
   let extR = 0;
-  let extB = 0;
   let extW = W;
   /** Camera zoom, eased toward its target instead of snapping. */
   let zoom = 1;
@@ -399,7 +404,6 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   let fogLayer: HTMLCanvasElement | null = null;
   let shimmerLayer: HTMLCanvasElement | null = null;
   /** Cheap foreground vignette: four thin edge bands instead of a full-screen blit. */
-  let vigTop: HTMLCanvasElement | null = null;
   let vigBottom: HTMLCanvasElement | null = null;
   let vigLeft: HTMLCanvasElement | null = null;
   let vigRight: HTMLCanvasElement | null = null;
@@ -473,28 +477,45 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     const ch = canvas.height;
     if (cw < 1 || ch < 1) {
       extW = W;
-      extL = extT = extR = extB = 0;
+      extL = extR = 0;
+      shiftY = 0;
       viewOx = viewOy = 0;
       return;
     }
-    // Contain the playfield in the canvas (uniform scale keeps every sprite
-    // blit 1:1). Vertical placement is biased toward the top: the sky above
-    // the tower is scenery worth showing, while extra bare asphalt below the
-    // cannon just reads as empty space.
-    const fit = Math.min(cw / W, ch / H);
-    scale = fit;
-    viewOx = Math.round((cw - W * fit) / 2);
-    viewOy = Math.round((ch - H * fit) * 0.62);
-    extL = viewOx / fit;
-    extR = (cw - viewOx - W * fit) / fit;
-    extT = viewOy / fit;
-    extB = (ch - viewOy - H * fit) / fit;
-    extW = extL + W + extR;
+    // Real-game fullscreen: the FIELD stretches with the screen instead of
+    // floating inside letterbox margins. The 400-logical width always fills
+    // the canvas width; every extra vertical pixel becomes sky ABOVE the
+    // tower (game coordinates shift down as a whole), so the cannon line sits
+    // near the screen bottom and no dead margin exists. On height-limited
+    // (landscape/desktop) canvases the slack is horizontal scenery instead.
+    const widthLimited = cw / W <= ch / H;
+    scale = widthLimited ? cw / W : ch / H;
+    if (widthLimited) {
+      viewOx = 0;
+      viewOy = 0;
+      extL = extR = 0;
+      extW = W;
+      shiftY = Math.max(0, ch / scale - H);
+    } else {
+      viewOx = Math.round((cw - W * scale) / 2);
+      viewOy = 0;
+      extL = viewOx / scale;
+      extR = (cw - viewOx - W * scale) / scale;
+      extW = extL + W + extR;
+      shiftY = 0;
+    }
   }
 
   function buildBackgroundLayers(): void {
     bgMode = palette.mode;
     const dark = palette.mode === "dark";
+    // World height: the game field plus the portrait sky shift. All scenery
+    // (horizon, city, ground) is baked against this so it reaches the canvas
+    // bottom edge on every aspect ratio.
+    const Hw = H + shiftY;
+    const nearBandTop = Hw - NEAR_BAND_H;
+    makeStars(Hw);
+    makeSkylineLights(Hw);
     // ---- Static backdrop. One full-screen blit per frame replaces the old
     // sky + far strip + haze + floor + tower-shadow + vignette stack (which
     // cost several full-screen composites per frame).
@@ -507,28 +528,17 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     {
       const s = skyLayer.getContext("2d")!;
       s.scale(scale, scale);
-      s.translate(extL, extT);
+      s.translate(extL, 0);
       const sky = SKY[palette.mode];
-      // Margins: flat sky above the field, asphalt continuation below it.
-      s.fillStyle = sky.top;
-      s.fillRect(-extL, -extT, extW, Math.max(0, extT) + 1);
-      if (extB > 0) {
-        const below = linGrad(s, 0, H, 0, H + Math.max(1, extB), [
-          [0, dark ? "#04060c" : "rgb(113,124,140)"],
-          [1, dark ? "#020309" : "rgb(96,107,124)"],
-        ]);
-        s.fillStyle = below;
-        s.fillRect(-extL, H, extW, extB + 1);
-      }
-      const grad = s.createLinearGradient(0, 0, 0, H);
+      const grad = s.createLinearGradient(0, 0, 0, Hw);
       grad.addColorStop(0, sky.top);
       grad.addColorStop(0.55, sky.mid);
       grad.addColorStop(1, sky.bottom);
       s.fillStyle = grad;
-      s.fillRect(-extL, 0, extW, H);
+      s.fillRect(-extL, 0, extW, Hw);
       // Warm city glow on the horizon; cool haze above it.
-      const horizon = H - 120;
-      const halo = s.createRadialGradient(W / 2, horizon, 10, W / 2, horizon, H * 0.55);
+      const horizon = Hw - 120;
+      const halo = s.createRadialGradient(W / 2, horizon, 10, W / 2, horizon, Hw * 0.55);
       halo.addColorStop(0, dark ? "rgba(88,104,168,0.30)" : "rgba(255,232,180,0.5)");
       halo.addColorStop(0.55, dark ? "rgba(46,60,110,0.12)" : "rgba(255,236,190,0.18)");
       halo.addColorStop(1, "rgba(0,0,0,0)");
@@ -568,15 +578,15 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         s.fillRect(-extL, 0, extW, 240);
       }
       // Soft edge vignette (background only; the foreground adds thin bands).
-      const vig = s.createRadialGradient(W / 2, H / 2, H * 0.32, W / 2, H / 2, H * 0.8);
+      const vig = s.createRadialGradient(W / 2, Hw / 2, Hw * 0.32, W / 2, Hw / 2, Hw * 0.8);
       vig.addColorStop(0, "rgba(0,0,0,0)");
       vig.addColorStop(1, dark ? "rgba(2,4,10,0.52)" : "rgba(60,72,96,0.22)");
       s.fillStyle = vig;
-      s.fillRect(-extL, -extT, extW, H + Math.max(0, extB));
+      s.fillRect(-extL, 0, extW, Hw);
       // Far skyline is baked here: at this distance it does not need parallax.
       // Marched across the full extended width so side margins keep a city.
       const farBase = SKYLINE_FAR[palette.mode];
-      s.fillStyle = linGrad(s, 0, H - 240, 0, H - 60, [
+      s.fillStyle = linGrad(s, 0, Hw - 240, 0, Hw - 60, [
         [0, shade(farBase, dark ? 1.35 : 1.02)],
         [1, dark ? "rgba(20,30,58,0.55)" : rgba(farBase, 0.9)],
       ]);
@@ -586,9 +596,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         const w = 18 + farRng() * 30;
         const h = 60 + farRng() * 95;
         const spire = farRng() < 0.3 ? 8 + farRng() * 14 : 0;
-        s.fillRect(farX + 30, H - 150 - h, w, h + 150);
+        s.fillRect(farX + 30, Hw - 150 - h, w, h + 150);
         if (spire > 0) {
-          s.fillRect(farX + 30 + w / 2 - 1, H - 150 - h - spire, 2, spire);
+          s.fillRect(farX + 30 + w / 2 - 1, Hw - 150 - h - spire, 2, spire);
         }
         farX += w + 2 + farRng() * 6;
       }
@@ -596,16 +606,17 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       s.fillStyle = dark ? "rgba(190,208,255,0.16)" : "rgba(255,255,255,0.28)";
       const rngFar = makeRng("far-windows");
       for (let i = 0; i < 90; i++) {
-        s.fillRect(-extL + rngFar() * extW, H - 200 + rngFar() * 130, 1.6, 2);
+        s.fillRect(-extL + rngFar() * extW, Hw - 200 + rngFar() * 130, 1.6, 2);
       }
       // Tower shadow column: darkens the city behind the playfield. Ramps in
       // from zero so the band's top edge never shows as a hard line.
-      s.fillStyle = linGrad(s, 0, TOWER_TOP, 0, H, [
+      const shadowTop = TOWER_TOP + shiftY;
+      s.fillStyle = linGrad(s, 0, shadowTop, 0, Hw, [
         [0, "rgba(0,0,0,0)"],
-        [0.25, `rgba(0,0,0,${towerShadowAlpha(TOWER_TOP + (H - TOWER_TOP) * 0.25, dark)})`],
-        [1, `rgba(0,0,0,${towerShadowAlpha(H, dark)})`],
+        [0.25, `rgba(0,0,0,${towerShadowAlpha(shadowTop + (Hw - shadowTop) * 0.25, dark)})`],
+        [1, `rgba(0,0,0,${towerShadowAlpha(Hw, dark)})`],
       ]);
-      s.fillRect(0, TOWER_TOP, W, H - TOWER_TOP);
+      s.fillRect(0, shadowTop, W, Hw - shadowTop);
     }
 
     // ---- Near skyline band (parallax). Short canvas: only the band that can
@@ -616,12 +627,12 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     {
       const s = nearStrip.getContext("2d")!;
       s.scale(scale, scale);
-      s.translate(0, -NEAR_BAND_TOP);
+      s.translate(0, -nearBandTop);
       const base = SKYLINE_NEAR[palette.mode];
       for (const seg of SKYLINE_NEAR_SEGS) {
         const x = seg.x + 40;
-        const top = H - 74 - seg.h;
-        s.fillStyle = linGrad(s, 0, top, 0, H, [
+        const top = Hw - 74 - seg.h;
+        s.fillStyle = linGrad(s, 0, top, 0, Hw, [
           [0, shade(base, dark ? 1.12 : 1.04)],
           [1, base],
         ]);
@@ -642,77 +653,76 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         }
         s.fillStyle = "rgba(255,80,80,0.9)";
         for (const seg of SKYLINE_NEAR_SEGS) {
-          if (seg.h > 70) s.fillRect(seg.x + 40 + seg.w / 2 - 1, H - 74 - seg.h - 3, 2, 2);
+          if (seg.h > 70) s.fillRect(seg.x + 40 + seg.w / 2 - 1, Hw - 74 - seg.h - 3, 2, 2);
         }
       }
       // Bake the tower shadow into this band as well (ramped from zero, same
       // reason as the backdrop column).
-      s.fillStyle = linGrad(s, 0, NEAR_BAND_TOP, 0, H, [
+      s.fillStyle = linGrad(s, 0, nearBandTop, 0, Hw, [
         [0, "rgba(0,0,0,0)"],
-        [0.4, `rgba(0,0,0,${towerShadowAlpha(NEAR_BAND_TOP + NEAR_BAND_H * 0.4, dark)})`],
-        [1, `rgba(0,0,0,${towerShadowAlpha(H, dark)})`],
+        [0.4, `rgba(0,0,0,${towerShadowAlpha(nearBandTop + NEAR_BAND_H * 0.4, dark)})`],
+        [1, `rgba(0,0,0,${towerShadowAlpha(Hw, dark)})`],
       ]);
-      s.fillRect(0, NEAR_BAND_TOP, W + 80, NEAR_BAND_H);
+      s.fillRect(0, nearBandTop, W + 80, NEAR_BAND_H);
     }
 
-    // ---- Ground band: haze + wet asphalt with reflections. Extended to the
-    // full logical width and down through the bottom margin, so the asphalt
-    // plane runs all the way to the canvas edge (no empty strip below).
-    const groundH = GROUND_H + Math.max(0, extB);
+    // ---- Ground band: haze + wet asphalt with reflections. Anchored to the
+    // WORLD bottom (Hw) so the asphalt plane reaches the canvas edge.
+    const groundH = GROUND_H;
     groundLayer = document.createElement("canvas");
     groundLayer.width = Math.max(1, Math.ceil(extW * scale));
     groundLayer.height = Math.ceil(groundH * scale);
     {
       const s = groundLayer.getContext("2d")!;
       s.scale(scale, scale);
-      s.translate(extL, -(H - GROUND_H));
+      s.translate(extL, -(Hw - GROUND_H));
       const fh = groundH;
-      const top = H - fh;
+      const top = Hw - fh;
       // Haze fading the skyline base into the ground.
-      s.fillStyle = linGrad(s, 0, H - 120, 0, H, [
+      s.fillStyle = linGrad(s, 0, Hw - 120, 0, Hw, [
         [0, "rgba(0,0,0,0)"],
         [1, dark ? "rgba(6,9,18,0.85)" : "rgba(90,104,128,0.45)"],
       ]);
-      s.fillRect(-extL, H - 120, extW, 120);
-      // Wet asphalt, running past the field bottom into the margin.
-      s.fillStyle = linGrad(s, 0, H - 108, 0, H + Math.max(0, extB), [
+      s.fillRect(-extL, Hw - 120, extW, 120);
+      // Wet asphalt.
+      s.fillStyle = linGrad(s, 0, Hw - 108, 0, Hw, [
         [0, dark ? "rgba(10,15,28,0.55)" : "rgba(150,162,180,0.35)"],
         [0.35, dark ? "rgba(6,10,20,0.9)" : "rgba(116,128,148,0.55)"],
         [1, dark ? "rgba(3,5,11,0.98)" : "rgba(92,104,124,0.7)"],
       ]);
-      s.fillRect(-extL, H - 108, extW, 108 + Math.max(0, extB));
+      s.fillRect(-extL, Hw - 108, extW, 108);
       if (dark) {
         // Reflected window lights as soft vertical streaks.
         for (const light of SKYLINE_LIGHTS) {
           if (light.x > W - WALL * 2 || light.x < WALL) continue;
           const rx = light.x + 40;
           const len = 26 + (rx % 13);
-          s.fillStyle = linGrad(s, 0, H - 108, 0, H - 108 + len, [
+          s.fillStyle = linGrad(s, 0, Hw - 108, 0, Hw - 108 + len, [
             [0, "rgba(255,196,110,0.20)"],
             [1, "rgba(255,196,110,0)"],
           ]);
-          s.fillRect(rx - 1.2, H - 108, 3.4, len);
+          s.fillRect(rx - 1.2, Hw - 108, 3.4, len);
         }
         // Mirrored silhouettes blurred into the wet ground.
         for (const seg of SKYLINE_NEAR_SEGS) {
           const rx = seg.x + 40;
-          s.fillStyle = linGrad(s, 0, H - 108, 0, H - 62, [
+          s.fillStyle = linGrad(s, 0, Hw - 108, 0, Hw - 62, [
             [0, "rgba(0,0,0,0.34)"],
             [1, "rgba(0,0,0,0)"],
           ]);
-          s.fillRect(rx, H - 108, seg.w, 46);
+          s.fillRect(rx, Hw - 108, seg.w, 46);
         }
       }
       // Specular horizon sheen + warm pool under the cannon.
       s.fillStyle = dark ? "rgba(120,150,210,0.10)" : "rgba(255,255,255,0.35)";
-      s.fillRect(-extL, H - 106, extW, 1.6);
-      const pool = s.createRadialGradient(W / 2, H - 34, 4, W / 2, H - 34, 96);
+      s.fillRect(-extL, Hw - 106, extW, 1.6);
+      const pool = s.createRadialGradient(W / 2, Hw - 34, 4, W / 2, Hw - 34, 96);
       pool.addColorStop(0, dark ? "rgba(255,196,110,0.18)" : "rgba(255,236,180,0.4)");
       pool.addColorStop(1, "rgba(255,196,110,0)");
       s.fillStyle = pool;
-      s.fillRect(0, H - 130, W, 130);
+      s.fillRect(0, Hw - 130, W, 130);
       // Tower shadow over the ground.
-      s.fillStyle = `rgba(0,0,0,${towerShadowAlpha(H - 40, dark) * 0.75})`;
+      s.fillStyle = `rgba(0,0,0,${towerShadowAlpha(Hw - 40, dark) * 0.75})`;
       s.fillRect(0, top, W, fh);
     }
 
@@ -793,7 +803,6 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       s.fillRect(0, 0, w, h);
       return cv;
     };
-    vigTop = edge(W, 30, true);
     vigBottom = document.createElement("canvas");
     {
       const { cv, s } = makeCanvas(W, 132);
@@ -1638,6 +1647,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     // (field + side margins) so the city never stops at the field edge.
     const drift = palette.reducedMotion ? 0 : time * 3;
     const period = W + 80;
+    const nearBandTop = H + shiftY - NEAR_BAND_H;
     if (nearStrip) {
       const off = (((-drift) % period) + period) % period;
       const kMin = Math.floor((-extL - off + 40) / period) - 1;
@@ -1645,23 +1655,23 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       for (let k = kMin; k <= kMax; k++) {
         const x = off + k * period - 40;
         if (x + period <= -extL || x >= W + extR) continue;
-        ctx.drawImage(nearStrip, x, NEAR_BAND_TOP, period, NEAR_BAND_H);
+        ctx.drawImage(nearStrip, x, nearBandTop, period, NEAR_BAND_H);
       }
     }
     // One drifting mist layer, slightly faster than the skyline.
     if (mistLayer) {
       const m = (((-(time * 5)) % period) + period) % period;
       ctx.globalAlpha = 0.85;
-      ctx.drawImage(mistLayer, m - 40, H - 116, period, 112);
+      ctx.drawImage(mistLayer, m - 40, H + shiftY - 116, period, 112);
       ctx.globalAlpha = 1;
     }
-    if (groundLayer) ctx.drawImage(groundLayer, -extL, H - GROUND_H, extW, GROUND_H + Math.max(0, extB));
+    if (groundLayer) ctx.drawImage(groundLayer, -extL, H + shiftY - GROUND_H, extW, GROUND_H);
 
     // Perspective floor lines converging toward the vanishing point, starting
     // from the canvas bottom edge so the ground keeps its depth in the margin.
     ctx.strokeStyle = palette.mode === "dark" ? "rgba(140,160,210,0.08)" : "rgba(70,90,120,0.10)";
     ctx.lineWidth = 1;
-    const floorY = H + Math.max(0, extB);
+    const floorY = H + shiftY;
     for (const [fx, fy] of [
       [-extL, floorY],
       [-extL + extW * 0.25, floorY],
@@ -1670,7 +1680,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     ]) {
       ctx.beginPath();
       ctx.moveTo(fx, fy);
-      ctx.lineTo(W / 2 + (fx - W / 2) * 0.18, CANNON_Y - 90);
+      ctx.lineTo(W / 2 + (fx - W / 2) * 0.18, CANNON_Y + shiftY - 90);
       ctx.stroke();
     }
   }
@@ -2664,7 +2674,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
    */
   function drawTopFade(): void {
     const dark = palette.mode === "dark";
-    const end = viewOy + 76 * scale;
+    const end = (shiftY + 76) * scale + viewOy;
     if (end <= 0) return;
     const grad = ctx.createLinearGradient(0, 0, 0, end);
     grad.addColorStop(0, dark ? "rgba(3,5,10,0.88)" : "rgba(238,241,246,0.8)");
@@ -2853,6 +2863,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     // One logical unit == `scale` device pixels on BOTH axes (uniform). A
     // non-uniform y scale forced bilinear resampling of every cached layer
     // and sprite every frame, which was the biggest raster cost.
+    // WORLD space first: scenery is anchored to the canvas edges.
     ctx.setTransform(scale, 0, 0, scale, viewOx, viewOy);
     // Cached layers/sprite blits are pixel aligned; nearest sampling is 4-8x
     // cheaper than bilinear here and visually identical at 1:1.
@@ -2880,6 +2891,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     zoom += (zoomTarget - zoom) * Math.min(1, dt * 7);
 
     drawBackground();
+
+    // Switch to GAME space: the whole playfield sits `shiftY` logical px down
+    // (portrait slack becomes sky above the tower).
+    ctx.setTransform(scale, 0, 0, scale, viewOx, viewOy + shiftY * scale);
 
     const amp = palette.reducedMotion || palette.screenShake === false ? 0 : shake;
     const sx = amp * (Math.sin(shakeT) * 0.55 + Math.sin(shakeT * 2.31 + 1.7) * 0.25);
@@ -3183,7 +3198,6 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     }
 
     // Screen-space polish: cheap edge vignette, slow-mo tint, impact flashes.
-    if (vigTop) ctx.drawImage(vigTop, 0, 0, W, 30);
     if (vigBottom) ctx.drawImage(vigBottom, 0, H - 132, W, 132);
     if (vigLeft) ctx.drawImage(vigLeft, 0, 0, 44, H);
     if (vigRight) ctx.drawImage(vigRight, W - 44, 0, 44, H);
@@ -3236,7 +3250,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       palette = p;
     },
     view() {
-      return { scale, ox: viewOx, oy: viewOy };
+      // Field origin = world origin + the game-coordinate shift.
+      return { scale, ox: viewOx, oy: viewOy + shiftY * scale };
     },
   };
 }
