@@ -119,97 +119,103 @@ interface Material {
  * Every brick kind gets its own material signature: base gradient, frame and
  * accent. Baked into the sprite so per-frame cost stays one drawImage.
  */
+/**
+ * 卡通风材质:高饱和色块 + 深描边 + 高光,颜色向《向僵尸开炮》
+ * 那类明亮弹幕手游对齐(顶面亮、底面饱和深色、边框近黑)。
+ */
 const BRICK_MATERIALS: Record<string, Material> = {
   spam: {
-    top: "#a9b4c3",
-    bottom: "#565f6c",
-    border: "#31383f",
-    side: "#48505c",
-    under: "#353c45",
-    accent: "#e6eef8",
+    top: "#b9cbe8",
+    bottom: "#4d6394",
+    border: "#1f2c50",
+    side: "#3c5184",
+    under: "#26355f",
+    accent: "#eaf3ff",
   },
   gold: {
-    top: "#ffeaa6",
-    bottom: "#c98f28",
-    border: "#79540f",
-    side: "#a3741e",
-    under: "#7c5814",
-    accent: "#fff4c8",
-    glow: "rgba(255,201,90,0.45)",
-    ink: "#241a05",
-    inkStroke: "rgba(255,247,214,0.55)",
+    top: "#ffe25c",
+    bottom: "#e89516",
+    border: "#7c4e05",
+    side: "#c47f12",
+    under: "#8f5c0b",
+    accent: "#fff6bd",
+    glow: "rgba(255,201,90,0.5)",
+    ink: "#2c1d03",
+    inkStroke: "rgba(255,249,214,0.6)",
   },
   flame: {
-    top: "#ff9d7c",
-    bottom: "#a82e1b",
-    border: "#6f1d10",
-    side: "#8a2a18",
-    under: "#672012",
-    accent: "#ffd08a",
-    glow: "rgba(255,110,60,0.4)",
+    top: "#ff8a5f",
+    bottom: "#d93317",
+    border: "#661108",
+    side: "#b02a12",
+    under: "#7e1c0c",
+    accent: "#ffcb7d",
+    glow: "rgba(255,110,60,0.45)",
   },
   bomb: {
-    top: "#ffc078",
-    bottom: "#b64b0b",
-    border: "#7d3208",
-    side: "#98400c",
-    under: "#743009",
-    accent: "#ffd766",
-    glow: "rgba(255,150,60,0.4)",
+    top: "#ffab42",
+    bottom: "#e56f0c",
+    border: "#6e3505",
+    side: "#c05a0e",
+    under: "#8a4108",
+    accent: "#ffdb70",
+    glow: "rgba(255,150,60,0.45)",
   },
   steel: {
-    top: "#dde9f7",
-    bottom: "#75889f",
-    border: "#3d4b60",
-    side: "#5e7089",
-    under: "#4a5768",
-    accent: "#f4faff",
-    ink: "#14202c",
-    inkStroke: "rgba(240,247,255,0.6)",
+    top: "#e6f1ff",
+    bottom: "#6d8fc4",
+    border: "#2b4472",
+    side: "#5273a8",
+    under: "#3a5484",
+    accent: "#f7fbff",
+    ink: "#101d34",
+    inkStroke: "rgba(242,249,255,0.65)",
   },
   healer: {
-    top: "#a8e8a9",
-    bottom: "#2f8845",
-    border: "#1d5f2d",
-    side: "#2f7c41",
-    under: "#215c31",
-    accent: "#eaffea",
-    glow: "rgba(120,230,120,0.4)",
+    top: "#9bf284",
+    bottom: "#229a3e",
+    border: "#0f5a24",
+    side: "#1d8c37",
+    under: "#136128",
+    accent: "#e6ffdd",
+    glow: "rgba(120,240,120,0.45)",
   },
   mirror: {
-    top: "#f5faff",
-    bottom: "#8fa4bb",
-    border: "#54687e",
-    side: "#7d90a7",
-    under: "#63758a",
+    top: "#ffffff",
+    bottom: "#96b3d8",
+    border: "#3c5478",
+    side: "#7a94ba",
+    under: "#576f92",
     accent: "#ffffff",
-    ink: "#16202c",
-    inkStroke: "rgba(245,250,255,0.65)",
+    ink: "#131e30",
+    inkStroke: "rgba(247,252,255,0.7)",
   },
   core: {
-    top: "#4a2569",
-    bottom: "#180a26",
-    border: "#2b1242",
-    side: "#30144a",
-    under: "#1d0d2e",
-    accent: "#d6a6ff",
-    glow: "rgba(190,100,255,0.5)",
-    ink: "#f7e9ff",
-    inkStroke: "rgba(26,6,44,0.85)",
+    top: "#b84fe0",
+    bottom: "#5c1188",
+    border: "#33084f",
+    side: "#8f2cb8",
+    under: "#410a63",
+    accent: "#f0b6ff",
+    glow: "rgba(200,110,255,0.55)",
+    ink: "#fbeaff",
+    inkStroke: "rgba(38,6,58,0.85)",
   },
 };
 
 const SKY = {
-  dark: { top: "#060a19", mid: "#101733", bottom: "#1e2749" },
-  light: { top: "#dde6f2", mid: "#c8d5e8", bottom: "#aebdd3" },
+  // 卡通夜:高饱和靛蓝紫黄昏,而不是写实暗夜。
+  dark: { top: "#141c52", mid: "#283487", bottom: "#4653bd" },
+  // 卡通白昼:明快蓝天。
+  light: { top: "#6fc2f6", mid: "#a3dcfb", bottom: "#ccf0ff" },
 };
-const SKYLINE_FAR = { dark: "#111a30", light: "#a8b5c8" };
+const SKYLINE_FAR = { dark: "#1c2765", light: "#7aa6e2" };
 
 /** Near skyline parallax band (only this slice can ever be on screen). */
 const NEAR_BAND_H = 186;
 /** Ground band: haze + wet asphalt. */
 const GROUND_H = 132;
-const SKYLINE_NEAR = { dark: "#0a0f1e", light: "#8594a9" };
+const SKYLINE_NEAR = { dark: "#0d1533", light: "#5a83c0" };
 
 /** Stars are re-scattered per background bake: the sky height follows the screen. */
 let STARS: Array<{ x: number; y: number; r: number; phase: number; speed: number }> = [];
@@ -602,6 +608,28 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         }
         farX += w + 2 + farRng() * 6;
       }
+      // Cartoon clouds: chunky white puffs on day sky, soft violet wisps on
+      // night sky. Baked, deterministic, kept away from the moon / sun corner.
+      const clouds = linGrad(s, 0, Hw * 0.06, 0, Hw * 0.42, [
+        [0, dark ? "rgba(150,160,230,0.20)" : "rgba(255,255,255,0.95)"],
+        [1, dark ? "rgba(150,160,230,0)" : "rgba(255,255,255,0.55)"],
+      ]);
+      const cloudRng = makeRng("sky-clouds");
+      for (let i = 0; i < 7; i++) {
+        const cx = 30 + cloudRng() * (W - 60);
+        const cy = Hw * 0.08 + cloudRng() * Hw * 0.3;
+        if (cy > horizon - 210) continue;
+        const cw = 46 + cloudRng() * 72;
+        const ch2 = cw * 0.38;
+        s.fillStyle = clouds;
+        s.beginPath();
+        s.arc(cx, cy, ch2 * 0.62, Math.PI, 0);
+        s.arc(cx + cw * 0.26, cy - ch2 * 0.42, ch2 * 0.5, Math.PI, 0);
+        s.arc(cx + cw * 0.52, cy, ch2 * 0.62, Math.PI, 0);
+        s.closePath();
+        s.fill();
+        s.fillRect(cx - ch2 * 0.62, cy - ch2 * 0.1, cw + ch2 * 1.1, ch2 * 0.55);
+      }
       // Distant window dust.
       s.fillStyle = dark ? "rgba(190,208,255,0.16)" : "rgba(255,255,255,0.28)";
       const rngFar = makeRng("far-windows");
@@ -681,14 +709,14 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       // Haze fading the skyline base into the ground.
       s.fillStyle = linGrad(s, 0, Hw - 120, 0, Hw, [
         [0, "rgba(0,0,0,0)"],
-        [1, dark ? "rgba(6,9,18,0.85)" : "rgba(90,104,128,0.45)"],
+        [1, dark ? "rgba(12,16,44,0.85)" : "rgba(78,108,156,0.4)"],
       ]);
       s.fillRect(-extL, Hw - 120, extW, 120);
       // Wet asphalt.
       s.fillStyle = linGrad(s, 0, Hw - 108, 0, Hw, [
-        [0, dark ? "rgba(10,15,28,0.55)" : "rgba(150,162,180,0.35)"],
-        [0.35, dark ? "rgba(6,10,20,0.9)" : "rgba(116,128,148,0.55)"],
-        [1, dark ? "rgba(3,5,11,0.98)" : "rgba(92,104,124,0.7)"],
+        [0, dark ? "rgba(20,28,72,0.55)" : "rgba(178,198,230,0.4)"],
+        [0.35, dark ? "rgba(12,18,52,0.9)" : "rgba(148,170,208,0.6)"],
+        [1, dark ? "rgba(8,12,36,0.98)" : "rgba(116,138,178,0.75)"],
       ]);
       s.fillRect(-extL, Hw - 108, extW, 108);
       if (dark) {
@@ -890,8 +918,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     s.fillStyle = grad;
     roundRectOn(s, 0, 0, bw, BRICK_H, 4);
     s.fill();
-    // Glass top edge.
-    s.fillStyle = "rgba(255,255,255,0.30)";
+    // Glossy candy top edge.
+    s.fillStyle = "rgba(255,255,255,0.42)";
     roundRectOn(s, 2.2, 1.4, bw - 4.4, 3.2, 1.8);
     s.fill();
     // Bottom contact shading inside the front face.
@@ -1342,15 +1370,15 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     s.clip();
     paintMaterialDetail(s, bw, mat, kind);
     s.restore();
-    // 4. Front border (dark outline keeps bricks readable on any backdrop).
+    // 4. Front border (thick near-black outline = the cartoon look).
     s.strokeStyle = mat.border;
-    s.lineWidth = 1.25;
-    roundRectOn(s, 0.7, 0.7, bw - 1.4, BRICK_H - 1.4, 3.6);
+    s.lineWidth = 2;
+    roundRectOn(s, 1, 1, bw - 2, BRICK_H - 2, 4.5);
     s.stroke();
-    // Inner bright lip on the top edge for a crisp arcade bevel.
-    s.strokeStyle = "rgba(255,255,255,0.16)";
-    s.lineWidth = 0.8;
-    roundRectOn(s, 1.5, 1.5, bw - 3, BRICK_H - 3, 3.2);
+    // Inner bright lip on the top edge for a crisp candy bevel.
+    s.strokeStyle = "rgba(255,255,255,0.3)";
+    s.lineWidth = 1;
+    roundRectOn(s, 2, 2, bw - 4, BRICK_H - 4, 3.4);
     s.stroke();
     return cv;
   }
@@ -3167,10 +3195,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         };
         const isProc = p.kind === "proc";
         ctx.font = isProc
-          ? "900 13px system-ui, sans-serif"
+          ? "900 15px system-ui, sans-serif"
           : p.crit
-            ? "900 18px system-ui, sans-serif"
-            : "700 12px system-ui, sans-serif";
+            ? "900 21px system-ui, sans-serif"
+            : "800 13.5px system-ui, sans-serif";
         ctx.textAlign = "center";
         const fill = isProc
           ? (procInk[p.proc ?? ""] ?? "#ffffff")
@@ -3187,8 +3215,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
           ctx.fillStyle = "rgba(0,0,0,0.55)";
           ctx.fillText(p.text, p.x + 1, py + 1);
         } else {
-          ctx.strokeStyle = "rgba(0,0,0,0.55)";
-          ctx.lineWidth = p.crit ? 4 : 3;
+          ctx.strokeStyle = "rgba(0,0,0,0.65)";
+          ctx.lineWidth = p.crit ? 5 : 3.5;
           ctx.strokeText(p.text, p.x, py);
         }
         ctx.fillStyle = fill;
