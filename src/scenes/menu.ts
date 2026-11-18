@@ -9,9 +9,16 @@ export interface MenuSceneInput {
   coins: number;
   dailyBestTower: number | null;
   resumable: boolean;
-  onStart(daily: boolean): void;
+  /** 关卡制:已解锁的最高关(1-based)与上次游玩(继续闯关默认值)。 */
+  stageUnlocked: number;
+  lastStage: { stage: number; difficulty: "easy" | "hard" | "hell" } | null;
+  power: number;
+  onStart(stage: number, difficulty: "easy" | "hard" | "hell"): void;
+  onDaily(): void;
   onResume(): void;
+  onStages(): void;
   onShop(): void;
+  onQuests(): void;
   onCollection(): void;
   onSkills(): void;
   onHelp(): void;
@@ -19,15 +26,16 @@ export interface MenuSceneInput {
 }
 
 /**
- * Title screen in the standard mobile-game shape: big primary start button in
- * the middle, everything else tucked into a bottom dock, settings as a floating
- * gear above the dock's right edge.
+ * 标题屏:继续闯关大按钮 + 底部 Dock(选关/每日/商店/任务/成就/技能),
+ * 设置齿轮悬浮右下、玩法问号悬浮左下。
  */
 export function showMenuScene(overlay: OverlayManager, t: Translate, input: MenuSceneInput): void {
   overlay.clear();
   overlay.root.className = "overlay overlay--title";
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const dailyBest = input.dailyBestTower === null ? "—" : `${input.dailyBestTower + 1} 栋`;
+  const targetStage = input.lastStage?.stage ?? input.stageUnlocked;
+  const targetDiff = input.lastStage?.difficulty ?? "easy";
   const cell = (id: string, label: string, value: string) =>
     h(
       "div",
@@ -55,11 +63,14 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
     ),
     h(
       "button",
-      { class: "btn btn--primary btn--start", onclick: () => input.onStart(false) },
+      {
+        class: "btn btn--primary btn--start",
+        onclick: () => input.onStart(targetStage, targetDiff),
+      },
       h("span", { class: "btn-start__glow" }),
       icon("play"),
-      h("span", { class: "btn-start__label" }, t("menu.start")),
-      h("span", { class: "btn-start__coin" }, "INSERT COIN")
+      h("span", { class: "btn-start__label" }, t("menu.continueStage", { stage: String(targetStage) })),
+      h("span", { class: "btn-start__coin" }, t("menu.stageSub", { diff: DIFF_NAME[targetDiff] }))
     ),
     ...(input.resumable
       ? [
@@ -75,18 +86,26 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
     h(
       "nav",
       { class: "dock" },
-      dockItem(t("menu.dailyShort"), "calendar", () => input.onStart(true)),
+      dockItem(t("menu.stagesShort"), "tower", () => input.onStages()),
+      dockItem(t("menu.dailyShort"), "calendar", () => input.onDaily()),
       dockItem(t("menu.shopShort"), "shop", () => input.onShop()),
+      dockItem(t("menu.questsShort"), "gem", () => input.onQuests()),
       dockItem(t("menu.collectionShort"), "book", () => input.onCollection()),
-      dockItem(t("menu.skills"), "critPower", () => input.onSkills()),
-      dockItem(t("menu.help"), "help", () => input.onHelp())
+      dockItem(t("menu.skills"), "critPower", () => input.onSkills())
     ),
     h(
       "button",
       { class: "fab fab--menu", "aria-label": t("menu.settings"), onclick: () => input.onSettings() },
       icon("gear")
+    ),
+    h(
+      "button",
+      { class: "fab fab--help", "aria-label": t("menu.help"), onclick: () => input.onHelp() },
+      icon("help")
     )
   ];
   overlay.root.append(...children.filter((node): node is Node => node !== null));
   overlay.show();
 }
+
+const DIFF_NAME: Record<string, string> = { easy: "简单", hard: "困难", hell: "地狱" };

@@ -57,6 +57,10 @@ export interface TowerSpec {
   rows: number;
   isBoss: boolean;
   hpBase: number;
+  /** 难度乘数(关卡制):HP / 下沉速度 / 砖种类解锁偏移。 */
+  hpMul?: number;
+  descendMul?: number;
+  kindIndex?: number;
 }
 
 export function towerSpec(index: number): TowerSpec {
@@ -196,7 +200,7 @@ export function createTower(spec: TowerSpec, rng: Rng): Tower {
   const bricks: BoardBrick[] = [];
   let id = spec.index * 1000 + 1;
   const hpBase = spec.hpBase;
-  const weights = kindWeights(spec.index);
+  const weights = kindWeights(spec.kindIndex ?? spec.index);
   for (let row = 0; row < spec.rows; row++) {
     const y = TOWER_TOP + row * ROW_PITCH;
     if (spec.isBoss && row === 0) {

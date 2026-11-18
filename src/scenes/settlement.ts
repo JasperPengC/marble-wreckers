@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS, type RunSummaryStats } from "../game/meta.ts";
+import type { Difficulty } from "../game/stage.ts";
 import { makeRng } from "../game/rng.ts";
 import { fmtNum, h } from "../ui/overlays.ts";
 import { icon } from "../ui/icons.ts";
@@ -13,7 +14,18 @@ export interface SettlementSceneInput {
   previousRecord: Readonly<{ score: number; tower: number }>;
   onRestart(): void;
   onBack(): void;
+  onNext?(): void;
+  onStages?(): void;
+  /** 关卡制:通关时带奖励与难度;失败时带失败关卡。 */
+  victory?: { stage: number; difficulty: Difficulty; rewardBonus: number } | null;
+  failure?: { stage: number; difficulty: Difficulty } | null;
 }
+
+const DIFF_LABEL: Record<Difficulty, string> = {
+  easy: "简单",
+  hard: "困难",
+  hell: "地狱",
+};
 
 const TAUNTS = [
   "你碎了 {bricks} 块砖,整个审核组看了都沉默。",
@@ -48,9 +60,19 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
     !daily &&
     (stats.damage > prevRecord.score ||
       towerIndex > prevRecord.tower);
+  const victory = input.victory ?? null;
+  const failure = input.failure ?? null;
   shell.open({
-    title: t("death.title"),
-    meta: isRecord ? "★ " + t("death.record") : "",
+    title: victory
+      ? t("victory.title", { stage: String(victory.stage) })
+      : failure
+        ? t("death.stageFail", { stage: String(failure.stage) })
+        : t("death.title"),
+    meta: victory
+      ? t("victory.diff", { diff: DIFF_LABEL[victory.difficulty] })
+      : isRecord
+        ? "★ " + t("death.record")
+        : "",
     back: false,
     foot: "",
     body: [
@@ -73,6 +95,14 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
         h(
           "div",
           { class: "overlay__stats" },
+          victory
+            ? h(
+                "div",
+                { class: "overlay__stat overlay__stat--gold" },
+                t("victory.bonus"),
+                h("strong", {}, "+" + fmtNum(victory.rewardBonus))
+              )
+            : null,
           h("div", { class: "overlay__stat" }, t("death.score"), h("strong", {}, fmtNum(stats.damage))),
           h("div", { class: "overlay__stat" }, t("death.bricks"), h("strong", {}, String(stats.bricksDestroyed))),
           h("div", { class: "overlay__stat" }, t("death.combo"), h("strong", {}, String(stats.maxVolleyCombo))),
@@ -99,17 +129,32 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
       h(
         "div",
         { class: "scene__actions" },
-        h(
-          "button",
-          { class: "btn btn--primary", onclick: () => input.onRestart() },
-          icon("restart"),
-          t("death.restart")
-        ),
+        victory
+          ? h(
+              "button",
+              { class: "btn btn--primary", onclick: () => input.onNext?.() ?? input.onRestart() },
+              icon("play"),
+              input.onNext ? t("victory.next") : t("death.restart")
+            )
+          : h(
+              "button",
+              { class: "btn btn--primary", onclick: () => input.onRestart() },
+              icon("restart"),
+              failure ? t("death.retry") : t("death.restart")
+            ),
+        failure
+          ? h(
+              "button",
+              { class: "btn btn--key", onclick: () => input.onRestart() },
+              icon("restart"),
+              t("death.restart")
+            )
+          : null,
         h(
           "button",
           { class: "btn btn--ghost", onclick: () => input.onBack() },
           icon("home"),
-          t("death.menu")
+          input.onStages ? t("stages.backToStages") : t("death.menu")
         )
       ),
     ],

@@ -47,6 +47,20 @@ import { createSettingsScene } from "./scenes/settings.ts";
 import { showPauseScene } from "./scenes/pause.ts";
 import { createDraftScene, showRelicScene } from "./scenes/draft.ts";
 import { createBuildScene } from "./scenes/build.ts";
+import { createStagesScene } from "./scenes/stages.ts";
+import { createQuestsScene } from "./scenes/quests.ts";
+import {
+  accountPower,
+  claimQuest,
+  ensureDailyQuests,
+} from "./game/meta.ts";
+import {
+  DIFFICULTIES,
+  MAX_STAGE,
+  STAGE_TOWERS,
+  stageClearReward,
+  type Difficulty,
+} from "./game/stage.ts";
 import { createHudView } from "./ui/hud-view.ts";
 import { buildHudModel } from "./ui/hud-model.ts";
 import { bossProgress, towerBottomY } from "./game/board.ts";
@@ -57,6 +71,7 @@ type TemplateElements = {
   "hud-coins": HTMLElement;
   "hud-tower": HTMLElement;
   "hud-shield": HTMLElement;
+  "hud-power": HTMLElement;
   overlay: HTMLElement;
   notice: HTMLElement;
   player: HTMLElement;
@@ -226,6 +241,7 @@ let savedSnapshot: unknown = null;
 let draftShown = false;
 let relicShown = false;
 let deathShown = false;
+let victoryShown = false;
 let paused = false;
 const keys = { left: false, right: false };
 let aiming = false;
@@ -325,8 +341,9 @@ function announceTower(): void {
   lastCoreAlive = false;
   lastShields = run.shields;
   const spec = run.tower.spec;
+  const stagePrefix = run.stage != null ? `第 ${run.stage} 关 · ` : "";
   showBanner(
-    "第 " + (spec.index + 1) + " 栋",
+    stagePrefix + "第 " + (run.stats.towersCleared + 1) + " 栋",
     spec.isBoss ? "镇站巨楼 · 打掉核心即捣毁" : "清空整栋楼 · 抽一次强化"
   );
 }
@@ -357,24 +374,62 @@ function showMenu(): void {
   paused = false;
   setRunChrome(false);
   updateBuild();
+  ensureDailyQuests(meta, dailySeed());
   showMenuScene(overlay, t, {
     bestTower: meta.bestTower,
     bestScore: meta.bestScore,
     coins: meta.coins,
+    stageUnlocked: meta.stageUnlocked,
+    lastStage: meta.lastStage,
+    power: accountPower(meta),
     dailyBestTower: meta.daily?.date === dailySeed() ? meta.daily.bestTower : null,
     resumable: !!savedSnapshot && !!restoreRun(savedSnapshot),
-    onStart: startRun,
+    onStart: (stage, difficulty) => startRun({ stage, difficulty }),
+    onDaily: () => startRun({ daily: true }),
     onResume: () => {
       const restored = savedSnapshot ? restoreRun(savedSnapshot) : null;
       if (restored) resumeRun(restored);
     },
+    onStages: showStages,
     onShop: showShop,
+    onQuests: showQuests,
     onCollection: showCollection,
     onSkills: showSkills,
     onHelp: showHelp,
     onSettings: showSettings,
   });
   updateHUD();
+}
+
+// ------------------------------------------------------------- 选关 / 任务
+
+function showStages(): void {
+  infoReturn = "menu";
+  stagesScene({
+    meta: { stages: meta.stages, stageUnlocked: meta.stageUnlocked, coins: meta.coins },
+    power: accountPower(meta),
+    onStart: (stage, difficulty) => startRun({ stage, difficulty }),
+    onBack: showMenu,
+  });
+}
+
+function showQuests(): void {
+  infoReturn = "menu";
+  ensureDailyQuests(meta, dailySeed());
+  questsScene({
+    meta,
+    today: dailySeed(),
+    onClaim: (kind, id) => {
+      const reward = claimQuest(meta, kind, id, dailySeed());
+      if (reward > 0) {
+        void host.save("meta", meta);
+        setNotice(t("quests.claimedToast", { n: String(reward) }));
+        updateHUD();
+      }
+      showQuests();
+    },
+    onBack: showMenu,
+  });
 }
 
 function resumeRun(restored: Run): void {
@@ -384,6 +439,7 @@ function resumeRun(restored: Run): void {
   deathShown = false;
   draftShown = false;
   relicShown = false;
+  victoryShown = false;
   paused = false;
   overlay.hide();
   setRunChrome(true);
@@ -392,13 +448,19 @@ function resumeRun(restored: Run): void {
   announceTower();
 }
 
-function startRun(daily: boolean): void {
+function startRun(
+  config: { daily?: boolean; stage?: number | null; difficulty?: Difficulty | null } = {}
+): void {
+  const daily = config.daily === true;
+  const stage = daily ? null : config.stage ?? null;
+  const difficulty = daily ? null : config.difficulty ?? null;
   const seed = daily ? dailySeed() : `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
-  run = createRun(seed, meta.shop, daily);
+  run = createRun(seed, meta.shop, daily, stage, difficulty);
   savedSnapshot = null;
   void host.save("run", null);
   deathShown = false;
   draftShown = false;
+  victoryShown = false;
   paused = false;
   overlay.hide();
   setRunChrome(true);
@@ -457,6 +519,8 @@ const skillsScene = createSkillsScene(shell, t);
 const settingsScene = createSettingsScene(shell, t);
 const draftScene = createDraftScene(shell, t);
 const buildScene = createBuildScene(shell, t);
+const stagesScene = createStagesScene(shell, t);
+const questsScene = createQuestsScene(shell, t);
 
 // 场景只接收只读快照与回调；状态变更和持久化统一留在组装层。
 function buyShop(id: string): void {
@@ -582,7 +646,61 @@ function showDeath(
     daily: finished.daily,
     newAchievements: newAch,
     previousRecord: prevRecord,
-    onRestart: () => startRun(finished.daily),
+    failure:
+      finished.stage != null && finished.difficulty != null
+        ? { stage: finished.stage, difficulty: finished.difficulty }
+        : null,
+    onRestart: () =>
+      startRun(
+        finished.stage != null && finished.difficulty != null
+          ? { stage: finished.stage, difficulty: finished.difficulty }
+          : { daily: finished.daily }
+      ),
+    onStages: finished.stage != null ? showStages : undefined,
+    onBack: showMenu,
+  });
+}
+
+/** 关卡通关:发通关奖励、记录星标与解锁,弹通关结算。 */
+function stageVictory(): void {
+  if (!run || run.stage == null || run.difficulty == null) return;
+  const stage = run.stage;
+  const difficulty = run.difficulty;
+  const finished = run;
+  run = null;
+  paused = false;
+  setRunChrome(false);
+  const bonus = stageClearReward(stage, difficulty);
+  const newAch = applyRunResult(meta, {
+    coins: finished.coins + bonus,
+    towerIndex: finished.tower.spec.index,
+    score: finished.stats.damage,
+    bricks: finished.stats.bricksDestroyed,
+    bossKills: finished.stats.bossKills,
+    stats: finished.stats,
+    daily: false,
+    dailyDate: dailySeed(),
+    stage,
+    difficulty,
+    victory: true,
+  });
+  void host.save("meta", meta);
+  void host.save("run", null);
+  updateHUD();
+  showSettlementScene(shell, t, {
+    stats: finished.stats,
+    coins: finished.coins,
+    towerIndex: finished.tower.spec.index,
+    daily: false,
+    newAchievements: newAch,
+    previousRecord: { score: meta.bestScore, tower: meta.bestTower },
+    victory: { stage, difficulty, rewardBonus: bonus },
+    onRestart: () => startRun({ stage, difficulty }),
+    onNext: () =>
+      stage < MAX_STAGE
+        ? startRun({ stage: stage + 1, difficulty })
+        : startRun({ stage, difficulty }),
+    onStages: showStages,
     onBack: showMenu,
   });
 }
@@ -1008,6 +1126,11 @@ function loop(now: number): void {
         persistAll(true);
         endRun(false);
       }
+      if (run && run.phase === "victory" && !victoryShown) {
+        victoryShown = true;
+        persistAll(true);
+        stageVictory();
+      }
     } else {
       renderer.frame(null, [], dt);
     }
@@ -1030,6 +1153,8 @@ function installDebugHooks(): void {
     __render?: () => void;
     __win?: () => boolean;
     __grant?: (levels: Record<string, number>) => boolean;
+    __stageClear?: () => boolean;
+    __unlockStage?: (n: number) => boolean;
     __coins?: (amount: number) => number;
     __audio?: () => { played: number; state: string; enabled: boolean };
     __shield?: (count?: number) => boolean;
@@ -1046,6 +1171,8 @@ function installDebugHooks(): void {
           total: run.tower.bricks.length,
           damage: run.stats.damage,
           coins: run.coins,
+          tower: run.tower.spec.index + 1,
+          stage: run.stage,
         }
       : { phase: "menu" };
   dbgApi.__step = (frames: number) => {
@@ -1073,6 +1200,17 @@ function installDebugHooks(): void {
     }
     updateBuild();
     updateHUD();
+    return true;
+  };
+  dbgApi.__stageClear = () => {
+    if (!run || run.stage == null) return false;
+    // 跳到通关前一刻:当前这栋楼打穿(collapse 结束)即触发 victory。
+    run.stats.towersCleared = STAGE_TOWERS - 1;
+    return true;
+  };
+  dbgApi.__unlockStage = (n: number) => {
+    meta.stageUnlocked = Math.max(1, Math.min(MAX_STAGE, Math.floor(n)));
+    void host.save("meta", meta);
     return true;
   };
   dbgApi.__audio = () => audio.stats();

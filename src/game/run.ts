@@ -28,6 +28,7 @@ import {
   type BoardBrick,
   type BrickKind,
   type Tower,
+  type TowerSpec,
 } from "./board.ts";
 import { relicById, relicGift, rollRelics } from "./relics.ts";
 import {
@@ -56,8 +57,21 @@ import {
   type StepEvent,
 } from "./physics.ts";
 import type { RunSummaryStats } from "./meta.ts";
+import {
+  DIFFICULTY_DEFS,
+  STAGE_TOWERS,
+  stageTowerIndex,
+  type Difficulty,
+} from "./stage.ts";
 
-export type RunPhase = "aim" | "volley" | "collapse" | "draft" | "relic" | "dead";
+export type RunPhase =
+  | "aim"
+  | "volley"
+  | "collapse"
+  | "draft"
+  | "relic"
+  | "dead"
+  | "victory";
 
 export type ProcKind =
   | "crit"
@@ -134,21 +148,29 @@ export interface Run {
   relics: string[];
   /** Boss 掉落的遗物候选；非空时选完卡进入遗物选择。 */
   relicOptions: string[];
+  /** 主线关卡(1-based);null = 无尽/每日模式。 */
+  stage: number | null;
+  /** 关卡难度;stage 为 null 时也是 null。 */
+  difficulty: Difficulty | null;
 }
 
 export function createRun(
   seed: string,
   shop: Record<string, number>,
-  daily: boolean
+  daily: boolean,
+  stage: number | null = null,
+  difficulty: Difficulty | null = null
 ): Run {
   const rng = makeRng(seed);
   const mods = baseMods();
   const run: Run = {
     seed,
     daily,
+    stage,
+    difficulty,
     shop: { ...shop },
     phase: "aim",
-    tower: createTower(towerSpec(0), rng),
+    tower: createTower(stageTowerSpec(stage, 0, difficulty), rng),
     mods,
     levels: {},
     shields: shop.shield ?? 0,
@@ -200,6 +222,32 @@ export function createRun(
 
 export function descendSpeed(towerIndex: number): number {
   return Math.min(DESCEND_BASE + towerIndex * DESCEND_PER_TOWER, DESCEND_MAX);
+}
+
+/** 关卡内某一栋楼的规格:全局曲线 × 难度乘数。 */
+function stageTowerSpec(
+  stage: number | null,
+  localIdx: number,
+  difficulty: Difficulty | null
+): TowerSpec {
+  if (stage == null || difficulty == null) return towerSpec(localIdx);
+  const def = DIFFICULTY_DEFS[difficulty];
+  const index = stageTowerIndex(stage, localIdx);
+  const base = towerSpec(index);
+  return {
+    ...base,
+    hpBase: Math.max(1, Math.round(base.hpBase * def.hpMul)),
+    descendMul: def.descendMul,
+    kindIndex: index + def.kindShift,
+  };
+}
+
+/** 下一栋楼的规格(全局序号连续推进)。 */
+function nextTowerSpec(run: Run): TowerSpec {
+  const nextIndex = run.tower.spec.index + 1;
+  if (run.stage == null || run.difficulty == null) return towerSpec(nextIndex);
+  const localIdx = nextIndex - stageTowerIndex(run.stage, 0);
+  return stageTowerSpec(run.stage, localIdx, run.difficulty);
 }
 
 function popup(run: Run, p: Omit<DamagePopup, "life" | "maxLife">): void {
@@ -539,7 +587,11 @@ export function updateRun(run: Run, frameDt: number): void {
     const slowForStragglers =
       remaining <= 2 && hasReachableBrick(run.tower, CEILING + BRICK_H);
     const mercy = slowForStragglers ? 0.25 : 1;
-    run.tower.offset += descendSpeed(run.tower.spec.index) * mercy * dt;
+    run.tower.offset +=
+      descendSpeed(run.tower.spec.index) *
+      (run.tower.spec.descendMul ?? 1) *
+      mercy *
+      dt;
     tickStatuses(run, dt);
     const healed = tickHealers(run.tower, dt);
     if (healed > 0) {
@@ -624,6 +676,12 @@ export function updateRun(run: Run, frameDt: number): void {
     run.collapseT += dt;
     if (run.collapseT >= COLLAPSE_TIME) {
       run.stats.towersCleared += 1;
+      // 关卡制:打穿本关全部楼 → 通关(victory),主循环交给结算。
+      if (run.stage != null && run.stats.towersCleared >= STAGE_TOWERS) {
+        run.pendingCollapse = false;
+        run.phase = "victory";
+        return;
+      }
       // Boss 掉遗物：先抽卡，选完卡再挑遗物（顺序固定，便于存档还原）
       if (run.tower.spec.isBoss) {
         run.relicOptions = rollRelics(run.relics, run.rng);
@@ -647,7 +705,7 @@ export function updateRun(run: Run, frameDt: number): void {
         if (run.relicOptions.length > 0) {
           run.phase = "relic";
         } else {
-          run.tower = createTower(towerSpec(run.tower.spec.index + 1), run.rng);
+          run.tower = createTower(nextTowerSpec(run), run.rng);
           run.phase = "aim";
         }
       } else {
@@ -725,7 +783,7 @@ export function pickUpgrade(run: Run, id: string): boolean {
     run.phase = "relic";
     return true;
   }
-  run.tower = createTower(towerSpec(run.tower.spec.index + 1), run.rng);
+  run.tower = createTower(nextTowerSpec(run), run.rng);
   run.phase = "aim";
   return true;
 }
@@ -740,7 +798,7 @@ export function pickRelic(run: Run, id: string): boolean {
   const gift = relicGift(id);
   if (gift.shields) run.shields += gift.shields;
   run.relicOptions = [];
-  run.tower = createTower(towerSpec(run.tower.spec.index + 1), run.rng);
+  run.tower = createTower(nextTowerSpec(run), run.rng);
   run.phase = "aim";
   return true;
 }
@@ -749,6 +807,9 @@ export function pickRelic(run: Run, id: string): boolean {
 export interface RunSnapshot {
   seed: string;
   daily: boolean;
+  /** 主线关卡与难度(v2);旧存档缺省 = 无尽模式。 */
+  stage?: number | null;
+  difficulty?: Difficulty | null;
   shop: Record<string, number>;
   towerIndex: number;
   offset: number;
@@ -798,12 +859,14 @@ export interface RunSnapshot {
 }
 
 export function snapshotRun(run: Run): RunSnapshot | null {
-  if (run.phase === "dead") return null;
+  if (run.phase === "dead" || run.phase === "victory") return null;
   const phase: "aim" | "draft" | "relic" =
     run.phase === "draft" ? "draft" : run.phase === "relic" ? "relic" : "aim";
   return {
     seed: run.seed,
     daily: run.daily,
+    stage: run.stage,
+    difficulty: run.difficulty,
     shop: { ...run.shop },
     towerIndex: run.tower.spec.index,
     offset: run.tower.offset,
@@ -834,13 +897,23 @@ export function restoreRun(snap: unknown): Run | null {
   }
   const rng = makeRng(s.seed);
   rng.setState(s.rngState ?? 0);
+  const stage = typeof s.stage === "number" && Number.isFinite(s.stage) ? Math.floor(s.stage) : null;
+  const difficulty =
+    s.difficulty === "easy" || s.difficulty === "hard" || s.difficulty === "hell"
+      ? s.difficulty
+      : null;
   const run = createRun(
     s.seed,
     s.shop && typeof s.shop === "object" ? (s.shop as Record<string, number>) : {},
-    s.daily === true
+    s.daily === true,
+    stage,
+    difficulty
   );
   // Rebuild the tower from the snapshot.
-  const spec = towerSpec(s.towerIndex);
+  const spec =
+    stage != null && difficulty != null
+      ? stageTowerSpec(stage, s.towerIndex - stageTowerIndex(stage, 0), difficulty)
+      : towerSpec(s.towerIndex);
   run.tower = {
     spec,
     bricks: s.bricks

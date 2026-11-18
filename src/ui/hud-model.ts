@@ -13,6 +13,7 @@ import type { Run } from "../game/run.ts";
 import { upgradeById, upgradeCategory } from "../game/upgrades.ts";
 import type { SkillGrade, UpgradeCategory } from "../game/upgrades.ts";
 import { relicById } from "../game/relics.ts";
+import { accountPower } from "../game/meta.ts";
 
 export interface HudReadout {
   /** 本局伤害（热度）；不在局内时是历史最高分。 */
@@ -22,6 +23,10 @@ export interface HudReadout {
   tower: string;
   /** 护盾数；无护盾概念时（菜单）为 null，界面显示占位符。 */
   shield: number | null;
+  /** 关卡制:本局所属关卡(无尽/每日为 null)。 */
+  stage: number | null;
+  /** 账号战力。 */
+  power: number;
 }
 
 export interface OwnedSkill {
@@ -89,6 +94,8 @@ export function buildHudModel(
         coins: meta.coins,
         tower: meta.bestTower >= 0 ? String(meta.bestTower + 1) : "—",
         shield: null,
+        stage: null,
+        power: accountPower(meta),
       },
       skills: [],
       relics: [],
@@ -126,6 +133,8 @@ export function buildHudModel(
       coins: run.coins,
       tower: String(run.tower.spec.index + 1),
       shield: run.shields,
+      stage: run.stage,
+      power: accountPower(meta),
     },
     skills,
     relics: run.relics

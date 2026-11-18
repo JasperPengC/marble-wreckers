@@ -98,10 +98,46 @@ const LEGACY_ACHIEVEMENT_IDS: Record<string, string> = {
   "score-1m": "score-20k",
 };
 
+/** 单关的通关记录:三档难度各一颗星。 */
+export interface StageRecord {
+  easy?: boolean;
+  hard?: boolean;
+  hell?: boolean;
+  bestScore?: number;
+}
+
+export type Difficulty = "easy" | "hard" | "hell";
+
+export interface QuestItemState {
+  progress: number;
+  claimed: boolean;
+}
+
+export interface QuestSave {
+  /** 每日任务所属日期(YYYY-MM-DD);换日重置。 */
+  date: string;
+  daily: Record<string, QuestItemState>;
+  milestones: Record<string, QuestItemState>;
+  /** 每日累计计数(驱动每日任务进度)。 */
+  towers: number;
+  gems: number;
+  stageClears: number;
+}
+
 export interface MetaSave {
   coins: number;
   shop: Record<string, number>;
   achievements: string[];
+  /** 主线关卡进度:每关各难度通关记录。 */
+  stages: Record<number, StageRecord>;
+  /** 已解锁的最高关卡(1-based,≥1)。 */
+  stageUnlocked: number;
+  /** 地狱难度通关次数(里程碑任务用)。 */
+  hellClears: number;
+  /** 上一次游玩的关卡与难度(继续闯关默认值)。 */
+  lastStage: { stage: number; difficulty: Difficulty } | null;
+  /** 任务存档。 */
+  quests: QuestSave;
   /** Highest tower ordinal reached (0-based) in standard mode. */
   bestTower: number;
   bestScore: number;
@@ -119,6 +155,11 @@ export function emptyMeta(): MetaSave {
     coins: 0,
     shop: {},
     achievements: [],
+    stages: {},
+    stageUnlocked: 1,
+    hellClears: 0,
+    lastStage: null,
+    quests: emptyQuests(),
     bestTower: -1,
     bestScore: 0,
     totalBricks: 0,
@@ -133,6 +174,96 @@ export function emptyMeta(): MetaSave {
       themeMode: "auto",
     },
   };
+}
+
+export function emptyQuests(): QuestSave {
+  return { date: "", daily: {}, milestones: {}, towers: 0, gems: 0, stageClears: 0 };
+}
+
+export interface QuestDef {
+  id: string;
+  name: string;
+  desc: string;
+  goal: number;
+  reward: number;
+}
+
+/** 每日任务:按天重置,进度来自当日累计计数。 */
+export const DAILY_QUESTS: QuestDef[] = [
+  { id: "daily-towers", name: "拆迁达人", desc: "拆掉 3 栋楼", goal: 3, reward: 150 },
+  { id: "daily-gems", name: "日进斗金", desc: "获得 600 灵石", goal: 600, reward: 200 },
+  { id: "daily-stage", name: "稳步推进", desc: "通关 1 次任意关卡", goal: 1, reward: 300 },
+];
+
+/** 里程碑任务:永久进度,由存档状态推导。 */
+export const MILESTONE_QUESTS: Array<QuestDef & { progress: (meta: MetaSave) => number }> = [
+  { id: "stage-3", name: "初露锋芒", desc: "解锁第 3 关", goal: 3, reward: 300, progress: (m) => m.stageUnlocked },
+  { id: "stage-5", name: "崭露头角", desc: "解锁第 5 关", goal: 5, reward: 800, progress: (m) => m.stageUnlocked },
+  { id: "stage-10", name: "拆迁铁军", desc: "解锁第 10 关", goal: 10, reward: 2000, progress: (m) => m.stageUnlocked },
+  { id: "hell-1", name: "地狱行者", desc: "通关一次地狱难度", goal: 1, reward: 1200, progress: (m) => m.hellClears },
+  { id: "power-800", name: "装备精良", desc: "战力达到 800", goal: 800, reward: 600, progress: (m) => accountPower(m) },
+];
+
+/** 账号战力:局外养成 + 成就 + 关卡进度折算的单调数值。 */
+export function accountPower(meta: MetaSave): number {
+  const shop = meta.shop;
+  return (
+    100 +
+    (shop.research ?? 0) * 30 +
+    (shop.balls ?? 0) * 20 +
+    (shop.lube ?? 0) * 15 +
+    (shop.coin ?? 0) * 15 +
+    (shop.shield ?? 0) * 40 +
+    (shop.vanguard ?? 0) * 120 +
+    meta.achievements.length * 25 +
+    (meta.stageUnlocked - 1) * 40
+  );
+}
+
+/** 规范化单条任务状态。 */
+function normalizeQuestItem(raw: unknown): QuestItemState | null {
+  if (!raw || typeof raw !== "object") return null;
+  const src = raw as Record<string, unknown>;
+  return {
+    progress: typeof src.progress === "number" && Number.isFinite(src.progress) && src.progress >= 0 ? Math.floor(src.progress) : 0,
+    claimed: src.claimed === true,
+  };
+}
+
+/** Ensure today's daily quest buckets exist (reset on date change). */
+export function ensureDailyQuests(meta: MetaSave, today: string): QuestSave {
+  if (meta.quests.date !== today) {
+    meta.quests = { ...emptyQuests(), date: today };
+  }
+  for (const def of DAILY_QUESTS) {
+    if (!meta.quests.daily[def.id]) meta.quests.daily[def.id] = { progress: 0, claimed: false };
+  }
+  for (const def of MILESTONE_QUESTS) {
+    if (!meta.quests.milestones[def.id]) meta.quests.milestones[def.id] = { progress: 0, claimed: false };
+  }
+  return meta.quests;
+}
+
+/** 领取任务奖励;返回奖励灵石数(不可领取返回 0)。 */
+export function claimQuest(
+  meta: MetaSave,
+  kind: "daily" | "milestones",
+  id: string,
+  today: string
+): number {
+  ensureDailyQuests(meta, today);
+  const bucket = meta.quests[kind];
+  const state = bucket[id];
+  const def = kind === "daily" ? DAILY_QUESTS.find((q) => q.id === id) : MILESTONE_QUESTS.find((q) => q.id === id);
+  if (!state || !def || state.claimed) return 0;
+  const progress =
+    kind === "daily"
+      ? (id === "daily-towers" ? meta.quests.towers : id === "daily-gems" ? meta.quests.gems : meta.quests.stageClears)
+      : (MILESTONE_QUESTS.find((q) => q.id === id)?.progress(meta) ?? 0);
+  if (progress < def.goal) return 0;
+  state.claimed = true;
+  meta.coins += def.reward;
+  return def.reward;
 }
 
 /** Sanitize untrusted JSON into a MetaSave (missing/invalid fields reset). */
@@ -189,6 +320,65 @@ export function normalizeMeta(raw: unknown): MetaSave {
     }
     if (settings.themeMode === "auto" || settings.themeMode === "dark" || settings.themeMode === "light") {
       meta.settings.themeMode = settings.themeMode;
+    }
+  }
+  // --- v2:关卡进度 / 任务(旧档缺省 = 新档默认) ---
+  if (src.stages && typeof src.stages === "object") {
+    const stages = src.stages as Record<string, unknown>;
+    for (const [key, value] of Object.entries(stages)) {
+      const stage = Number(key);
+      if (!Number.isInteger(stage) || stage < 1 || stage > 99 || !value || typeof value !== "object") {
+        continue;
+      }
+      const rec = value as Record<string, unknown>;
+      meta.stages[stage] = {
+        easy: rec.easy === true,
+        hard: rec.hard === true,
+        hell: rec.hell === true,
+        bestScore: typeof rec.bestScore === "number" && Number.isFinite(rec.bestScore) ? Math.floor(rec.bestScore) : 0,
+      };
+    }
+  }
+  if (typeof src.stageUnlocked === "number" && Number.isFinite(src.stageUnlocked)) {
+    meta.stageUnlocked = Math.min(99, Math.max(1, Math.floor(src.stageUnlocked)));
+  }
+  // 关卡记录与解锁数互相校准:记录数不能超过解锁数。
+  const clearedMax = Object.keys(meta.stages).reduce(
+    (acc, stage) => {
+      const rec = meta.stages[Number(stage)];
+      return rec && (rec.easy || rec.hard || rec.hell) ? Math.max(acc, Number(stage)) : acc;
+    },
+    0
+  );
+  meta.stageUnlocked = Math.max(meta.stageUnlocked, Math.min(99, clearedMax + 1));
+  meta.stageUnlocked = Math.max(meta.stageUnlocked, 1);
+  if (typeof src.hellClears === "number" && Number.isFinite(src.hellClears) && src.hellClears >= 0) {
+    meta.hellClears = Math.floor(src.hellClears);
+  }
+  if (src.lastStage && typeof src.lastStage === "object") {
+    const ls = src.lastStage as Record<string, unknown>;
+    if (
+      typeof ls.stage === "number" && Number.isFinite(ls.stage) && ls.stage >= 1 &&
+      (ls.difficulty === "easy" || ls.difficulty === "hard" || ls.difficulty === "hell")
+    ) {
+      meta.lastStage = { stage: Math.floor(ls.stage), difficulty: ls.difficulty };
+    }
+  }
+  if (src.quests && typeof src.quests === "object") {
+    const q = src.quests as Record<string, unknown>;
+    meta.quests.date = typeof q.date === "string" ? q.date.slice(0, 10) : "";
+    meta.quests.towers = typeof q.towers === "number" && Number.isFinite(q.towers) && q.towers >= 0 ? Math.floor(q.towers) : 0;
+    meta.quests.gems = typeof q.gems === "number" && Number.isFinite(q.gems) && q.gems >= 0 ? Math.floor(q.gems) : 0;
+    meta.quests.stageClears = typeof q.stageClears === "number" && Number.isFinite(q.stageClears) && q.stageClears >= 0 ? Math.floor(q.stageClears) : 0;
+    for (const kind of ["daily", "milestones"] as const) {
+      const bucket = q[kind];
+      if (bucket && typeof bucket === "object") {
+        for (const [id, raw] of Object.entries(bucket as Record<string, unknown>)) {
+          if (id.length > 64) continue;
+          const item = normalizeQuestItem(raw);
+          if (item) meta.quests[kind][id] = item;
+        }
+      }
     }
   }
   if (src.daily && typeof src.daily === "object") {
@@ -314,12 +504,31 @@ export function applyRunResult(
     stats: RunSummaryStats;
     daily: boolean;
     dailyDate: string;
+    /** 关卡制:本局所属关卡与难度;通关时记录星标。 */
+    stage?: number | null;
+    difficulty?: Difficulty | null;
+    victory?: boolean;
   }
 ): string[] {
   meta.coins += Math.floor(opts.coins);
   meta.totalBricks += opts.bricks;
   meta.totalRuns += 1;
   meta.bossKills += opts.bossKills;
+  // 每日任务计数(含每日挑战局)。
+  meta.quests.towers += opts.stats.towersCleared;
+  meta.quests.gems += Math.max(0, Math.floor(opts.coins));
+  if (opts.stage != null && opts.difficulty != null) {
+    meta.lastStage = { stage: opts.stage, difficulty: opts.difficulty };
+  }
+  if (opts.victory && opts.stage != null && opts.difficulty != null) {
+    const rec = meta.stages[opts.stage] ?? {};
+    rec[opts.difficulty] = true;
+    rec.bestScore = Math.max(rec.bestScore ?? 0, Math.floor(opts.score));
+    meta.stages[opts.stage] = rec;
+    meta.stageUnlocked = Math.max(meta.stageUnlocked, Math.min(99, opts.stage + 1));
+    if (opts.difficulty === "hell") meta.hellClears += 1;
+    meta.quests.stageClears += 1;
+  }
   if (!opts.daily) {
     meta.bestTower = Math.max(meta.bestTower, opts.towerIndex);
     meta.bestScore = Math.max(meta.bestScore, opts.score);

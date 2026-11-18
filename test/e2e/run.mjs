@@ -768,7 +768,7 @@ async function testClearAndDraft(ctx) {
   ctx.note(`三选一: "${draft.title}"，${draft.cards.length} 张卡片: ${draft.cards.map((card) => card.slice(0, 30)).join(" | ")}`);
   await ctx.shot("03a-draft-cards");
 
-  const towerBefore = Number(hudBefore.tower);
+  const towerBefore = Number((await dbg()).tower);
   // 回归：三选一期间点「玩法说明」再返回，必须回到三选一。
   // 曾经因为 draft 不暂停 run，帮助页的「继续游戏」走 resume() 直接空转，
   // 按钮看着能点但毫无反应。
@@ -810,10 +810,9 @@ async function testClearAndDraft(ctx) {
       const state = await dbg();
       if (!state || state.phase !== "aim") return null;
       if (!(state.alive > 0 && state.alive === state.total)) return null;
-      const hud = await hudState();
-      const tower = Number(hud.tower);
+      const tower = Number(state.tower);
       if (!(tower > towerBefore)) return null;
-      return { state, hud, tower };
+      return { state, tower };
     },
     { timeout: 10000, label: "点选强化后进入更高的下一栋楼" }
   );
@@ -1319,12 +1318,12 @@ async function testGameUI(ctx) {
   await openFreshPage("游戏化 UI");
 
   // a) 菜单 Dock「玩法说明」→ 玩法说明（怎么玩 / 砖块图鉴 / 灵石与成长 / 快捷键）
-  const helpButton = await elementCenter("#overlay .dock__item:last-child");
+  const helpButton = await elementCenter("#overlay .fab--help");
   assert(
     !helpButton.missing && !helpButton.hidden && helpButton.width > 0 && helpButton.height > 0,
     `Dock 缺少可见的「玩法说明」入口: ${brief(helpButton)}`
   );
-  await clickSelector("#overlay .dock__item:last-child");
+  await clickSelector("#overlay .fab--help");
   const helpState = await waitFor(
     async () => {
       const state = await overlayState();
@@ -1750,7 +1749,7 @@ async function testResume(ctx) {
   const state = await dbg();
   await ctx.shot("08b-after-reload");
   const resumeButton = menu.buttons.find((button) =>
-    ["继续上次拆除", "继续", "Resume"].some((token) => button.text.includes(token))
+    ["继续上次拆除", "Resume Run"].some((token) => button.text.includes(token))
   );
 
   if (!resumeButton) {
@@ -1853,11 +1852,18 @@ async function waitCards(label, min = 1) {
 async function testBossAndRelic(ctx) {
   const mark = pageErrors.mark();
   await openFreshPage("Boss 与遗物");
-  await clickSelector("#overlay .btn--primary");
-  await waitPhase("aim", { timeout: 8000, label: "开局进入瞄准" });
+  // 关卡制:第 2 关的第 2 栋 = 全局第 5 栋 = Boss。解锁第 2 关后经选关页进入。
+  await ev("window.__unlockStage(2)");
+  await clickSelector("#overlay .dock__item:first-child");
+  await waitFor(
+    async () => (await ev("!!document.querySelector('#overlay .stage-card--next .stage-diff--easy')")),
+    { timeout: 8000, label: "选关页出现" }
+  );
+  await clickSelector("#overlay .stage-card--next .stage-diff--easy");
+  await waitPhase("aim", { timeout: 8000, label: "进入第 2 关" });
 
-  // 连清 4 栋走到 Boss
-  for (let tower = 0; tower < 4; tower += 1) {
+  // 清掉本关第 1 栋,下一栋就是 Boss
+  for (let tower = 0; tower < 1; tower += 1) {
     await ev("window.__win()");
     await waitFor(async () => (await dbg())?.phase === "draft", { timeout: 6000, label: "进入抽卡" });
     await waitCards("抽卡卡片出现");

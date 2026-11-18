@@ -24,7 +24,8 @@ export function createHudView(opts: HudOptions): HudView {
     const { readout } = model;
     opts.el("hud-score").textContent = fmtNum(readout.score);
     opts.el("hud-coins").textContent = fmtNum(readout.coins);
-    opts.el("hud-tower").textContent = readout.tower;
+    opts.el("hud-tower").textContent = readout.stage != null ? String(readout.stage) : readout.tower;
+    opts.el("hud-power").textContent = fmtNum(readout.power);
 
     const shield = opts.el("hud-shield");
     if (readout.shield === null) {
