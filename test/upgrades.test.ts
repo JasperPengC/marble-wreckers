@@ -6,6 +6,7 @@ import {
   applyStatuses,
   applyUpgrade,
   baseMods,
+  bricksWithin,
   coinValue,
   computeBlastDamage,
   computeHit,
@@ -295,9 +296,6 @@ describe("pierce and lanes", () => {
     expect(three.ballsToLaunch).toBe(one.ballsToLaunch);
   });
 });
-
-import { makeBoardBrick } from "../src/game/board.ts";
-import { bricksWithin } from "../src/game/upgrades.ts";
 
 describe("bricksWithin 爆炸范围", () => {
   test("必须计入楼体下沉偏移(炸视觉上邻近的砖,而非错位坐标的砖)", () => {
