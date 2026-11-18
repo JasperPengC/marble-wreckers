@@ -34,8 +34,13 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
   overlay.root.className = "overlay overlay--title";
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const dailyBest = input.dailyBestTower === null ? "—" : `${input.dailyBestTower + 1} 栋`;
-  const targetStage = input.lastStage?.stage ?? input.stageUnlocked;
-  const targetDiff = input.lastStage?.difficulty ?? "easy";
+  // 继续闯关 = 指向最新解锁的关;上次难度只在该关就是上次玩的那关时沿用
+  // (通关后 lastStage 是刚打完的关,应推进到 stageUnlocked;失败重试则正好)。
+  const targetStage = input.stageUnlocked;
+  const targetDiff =
+    input.lastStage && input.lastStage.stage === input.stageUnlocked
+      ? input.lastStage.difficulty
+      : "easy";
   const cell = (id: string, label: string, value: string) =>
     h(
       "div",

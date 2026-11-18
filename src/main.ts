@@ -969,7 +969,7 @@ function resume(): void {
 
 function showPause(): void {
   setRunChrome(false);
-  showPauseScene(shell, t, {
+  showPauseScene(shell, overlay, t, {
     onResume: resume,
     onHelp: showHelp,
     onSettings: showSettings,
