@@ -5,6 +5,7 @@ import type { SceneShell, Translate } from "./types.ts";
 export interface PauseSceneInput {
   onResume(): void;
   onHelp(): void;
+  onSettings(): void;
   onRetreat(): void;
 }
 
@@ -24,6 +25,12 @@ export function showPauseScene(shell: SceneShell, t: Translate, input: PauseScen
         { class: "btn btn--key", style: "--key:#c8b28a", onclick: () => input.onHelp() },
         h("span", { class: "btn__badge" }, icon("help")),
         h("span", { class: "btn__label" }, t("pause.help"))
+      ),
+      h(
+        "button",
+        { class: "btn btn--key", style: "--key:#8fb8ff", onclick: () => input.onSettings() },
+        h("span", { class: "btn__badge" }, icon("gear")),
+        h("span", { class: "btn__label" }, t("menu.settings"))
       ),
       h(
         "button",

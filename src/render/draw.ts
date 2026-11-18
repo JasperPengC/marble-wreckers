@@ -478,11 +478,13 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       return;
     }
     // Contain the playfield in the canvas (uniform scale keeps every sprite
-    // blit 1:1), then centre it; leftover space is filled by scenery margins.
+    // blit 1:1). Vertical placement is biased toward the top: the sky above
+    // the tower is scenery worth showing, while extra bare asphalt below the
+    // cannon just reads as empty space.
     const fit = Math.min(cw / W, ch / H);
     scale = fit;
     viewOx = Math.round((cw - W * fit) / 2);
-    viewOy = Math.round((ch - H * fit) / 2);
+    viewOy = Math.round((ch - H * fit) * 0.62);
     extL = viewOx / fit;
     extR = (cw - viewOx - W * fit) / fit;
     extT = viewOy / fit;
@@ -596,10 +598,11 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       for (let i = 0; i < 90; i++) {
         s.fillRect(-extL + rngFar() * extW, H - 200 + rngFar() * 130, 1.6, 2);
       }
-      // Tower shadow column: darkens the city behind the playfield.
+      // Tower shadow column: darkens the city behind the playfield. Ramps in
+      // from zero so the band's top edge never shows as a hard line.
       s.fillStyle = linGrad(s, 0, TOWER_TOP, 0, H, [
-        [0, `rgba(0,0,0,${towerShadowAlpha(TOWER_TOP, dark)})`],
-        [0.4, `rgba(0,0,0,${towerShadowAlpha(TOWER_TOP + (H - TOWER_TOP) * 0.4, dark)})`],
+        [0, "rgba(0,0,0,0)"],
+        [0.25, `rgba(0,0,0,${towerShadowAlpha(TOWER_TOP + (H - TOWER_TOP) * 0.25, dark)})`],
         [1, `rgba(0,0,0,${towerShadowAlpha(H, dark)})`],
       ]);
       s.fillRect(0, TOWER_TOP, W, H - TOWER_TOP);
@@ -642,24 +645,28 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
           if (seg.h > 70) s.fillRect(seg.x + 40 + seg.w / 2 - 1, H - 74 - seg.h - 3, 2, 2);
         }
       }
-      // Bake the tower shadow into this band as well.
+      // Bake the tower shadow into this band as well (ramped from zero, same
+      // reason as the backdrop column).
       s.fillStyle = linGrad(s, 0, NEAR_BAND_TOP, 0, H, [
-        [0, `rgba(0,0,0,${towerShadowAlpha(NEAR_BAND_TOP, dark)})`],
+        [0, "rgba(0,0,0,0)"],
+        [0.4, `rgba(0,0,0,${towerShadowAlpha(NEAR_BAND_TOP + NEAR_BAND_H * 0.4, dark)})`],
         [1, `rgba(0,0,0,${towerShadowAlpha(H, dark)})`],
       ]);
       s.fillRect(0, NEAR_BAND_TOP, W + 80, NEAR_BAND_H);
     }
 
     // ---- Ground band: haze + wet asphalt with reflections. Extended to the
-    // full logical width so side margins keep the asphalt plane.
+    // full logical width and down through the bottom margin, so the asphalt
+    // plane runs all the way to the canvas edge (no empty strip below).
+    const groundH = GROUND_H + Math.max(0, extB);
     groundLayer = document.createElement("canvas");
     groundLayer.width = Math.max(1, Math.ceil(extW * scale));
-    groundLayer.height = Math.ceil(GROUND_H * scale);
+    groundLayer.height = Math.ceil(groundH * scale);
     {
       const s = groundLayer.getContext("2d")!;
       s.scale(scale, scale);
       s.translate(extL, -(H - GROUND_H));
-      const fh = GROUND_H;
+      const fh = groundH;
       const top = H - fh;
       // Haze fading the skyline base into the ground.
       s.fillStyle = linGrad(s, 0, H - 120, 0, H, [
@@ -667,13 +674,13 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
         [1, dark ? "rgba(6,9,18,0.85)" : "rgba(90,104,128,0.45)"],
       ]);
       s.fillRect(-extL, H - 120, extW, 120);
-      // Wet asphalt.
-      s.fillStyle = linGrad(s, 0, H - 108, 0, H, [
+      // Wet asphalt, running past the field bottom into the margin.
+      s.fillStyle = linGrad(s, 0, H - 108, 0, H + Math.max(0, extB), [
         [0, dark ? "rgba(10,15,28,0.55)" : "rgba(150,162,180,0.35)"],
         [0.35, dark ? "rgba(6,10,20,0.9)" : "rgba(116,128,148,0.55)"],
         [1, dark ? "rgba(3,5,11,0.98)" : "rgba(92,104,124,0.7)"],
       ]);
-      s.fillRect(-extL, H - 108, extW, 108);
+      s.fillRect(-extL, H - 108, extW, 108 + Math.max(0, extB));
       if (dark) {
         // Reflected window lights as soft vertical streaks.
         for (const light of SKYLINE_LIGHTS) {
@@ -738,6 +745,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     }
 
     // ---- Depth-fog band for far tower rows (drawn over the bricks).
+    // Kept whisper-subtle: a heavy veil reads as a dirty overlay on fullscreen.
     fogLayer = document.createElement("canvas");
     fogLayer.width = Math.ceil((W - WALL * 2) * scale);
     fogLayer.height = Math.ceil(H * 0.5 * scale);
@@ -745,8 +753,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       const s = fogLayer.getContext("2d")!;
       s.scale(scale, scale);
       const color = dark ? "20,28,62" : "150,165,195";
+      const fogAlpha = dark ? 0.16 : 0.1;
       const fog = s.createLinearGradient(0, 0, 0, H * 0.5);
-      fog.addColorStop(0, `rgba(${color},0.34)`);
+      fog.addColorStop(0, `rgba(${color},${fogAlpha})`);
       fog.addColorStop(1, `rgba(${color},0)`);
       s.fillStyle = fog;
       s.fillRect(0, 0, W - WALL * 2, H * 0.5);
@@ -1646,16 +1655,18 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       ctx.drawImage(mistLayer, m - 40, H - 116, period, 112);
       ctx.globalAlpha = 1;
     }
-    if (groundLayer) ctx.drawImage(groundLayer, -extL, H - GROUND_H, extW, GROUND_H);
+    if (groundLayer) ctx.drawImage(groundLayer, -extL, H - GROUND_H, extW, GROUND_H + Math.max(0, extB));
 
-    // Perspective floor lines converging toward the vanishing point.
+    // Perspective floor lines converging toward the vanishing point, starting
+    // from the canvas bottom edge so the ground keeps its depth in the margin.
     ctx.strokeStyle = palette.mode === "dark" ? "rgba(140,160,210,0.08)" : "rgba(70,90,120,0.10)";
     ctx.lineWidth = 1;
+    const floorY = H + Math.max(0, extB);
     for (const [fx, fy] of [
-      [-extL, H],
-      [-extL + extW * 0.25, H],
-      [-extL + extW * 0.75, H],
-      [W + extR, H],
+      [-extL, floorY],
+      [-extL + extW * 0.25, floorY],
+      [-extL + extW * 0.75, floorY],
+      [W + extR, floorY],
     ]) {
       ctx.beginPath();
       ctx.moveTo(fx, fy);
@@ -1871,7 +1882,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
 
   function drawBrick(brick: BoardBrick, offset: number, hpFraction: number): void {
     const y = brick.y + offset;
-    if (y > H + BRICK_H + EX || y + brick.h + EX < -BRICK_H) return;
+    // 允许画到场地顶以上的天空边距里（楼体滑入时可见），配合顶端连续渐隐。
+    if (y > H + BRICK_H + EX || y + brick.h + EX < -ROW_PITCH_PX * 5) return;
     if (brick.kind === "core" && coreAuraSprite) {
       const alpha =
         (palette.reducedMotion ? 0.42 : 0.4 + 0.18 * Math.sin(time * 1.8)) *
@@ -2615,33 +2627,54 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     const left = GRID_LEFT - 4;
     const width = COLS * BRICK_W + 8;
     const dark = palette.mode === "dark";
-    const bodyTop = Math.max(-ROW_PITCH_PX * 2, TOWER_TOP + offset - ROW_PITCH_PX * 2);
+    const bodyTop = Math.max(-ROW_PITCH_PX * 5, TOWER_TOP + offset - ROW_PITCH_PX * 2);
     const bodyBottom = Math.min(H + 4, TOWER_TOP + (spec.rows - 1) * ROW_PITCH_PX + offset + ROW_PITCH_PX);
     if (bodyBottom > bodyTop) {
-      ctx.fillStyle = dark ? "#070c15" : "#9fadc2";
-      ctx.fillRect(left, bodyTop, width, bodyBottom - bodyTop);
+      // Slab melts into the sky at its top edge: 56px ramp instead of a hard
+      // cut line (the tower slides down through it during spawn).
+      const slab = dark ? "#070c15" : "#9fadc2";
+      const slabRamp = ctx.createLinearGradient(0, bodyTop, 0, bodyTop + 56);
+      slabRamp.addColorStop(0, dark ? "rgba(7,12,21,0)" : "rgba(159,173,194,0)");
+      slabRamp.addColorStop(1, slab);
+      ctx.fillStyle = slabRamp;
+      ctx.fillRect(left, bodyTop, width, Math.min(56, bodyBottom - bodyTop));
+      if (bodyBottom - bodyTop > 56) {
+        ctx.fillStyle = slab;
+        ctx.fillRect(left, bodyTop + 56, width, bodyBottom - bodyTop - 56);
+      }
       ctx.fillStyle = dark ? "rgba(120,150,200,0.14)" : "rgba(255,255,255,0.4)";
-      ctx.fillRect(left, bodyTop, 2, bodyBottom - bodyTop);
-      ctx.fillRect(left + width - 2, bodyTop, 2, bodyBottom - bodyTop);
+      const railTop = bodyTop + 56;
+      ctx.fillRect(left, railTop, 2, bodyBottom - railTop);
+      ctx.fillRect(left + width - 2, railTop, 2, bodyBottom - railTop);
     }
     if (facadeUnit) {
       for (let row = 0; row < spec.rows; row++) {
         const y = TOWER_TOP + row * ROW_PITCH_PX + offset - 3;
-        if (y > H || y + ROW_PITCH_PX < -4) continue;
+        if (y > H || y + ROW_PITCH_PX < -ROW_PITCH_PX * 5) continue;
         ctx.drawImage(facadeUnit, 0, y, W, ROW_PITCH_PX);
       }
     }
   }
 
-  /** Dissolve the top edge so the tower descends out of darkness. */
+  /**
+   * Dissolve the tower while it slides in at the top. Spanned in DEVICE space
+   * from the canvas top (behind the notch / HUD chips) down to 76 logical px
+   * into the field, so the margin part and the field part share ONE gradient —
+   * no segmented fade line where the field begins.
+   */
   function drawTopFade(): void {
     const dark = palette.mode === "dark";
-    const grad = ctx.createLinearGradient(0, 0, 0, 76);
-    grad.addColorStop(0, dark ? "rgba(3,5,10,0.85)" : "rgba(238,241,246,0.8)");
-    grad.addColorStop(0.55, dark ? "rgba(3,5,10,0.28)" : "rgba(238,241,246,0.22)");
+    const end = viewOy + 76 * scale;
+    if (end <= 0) return;
+    const grad = ctx.createLinearGradient(0, 0, 0, end);
+    grad.addColorStop(0, dark ? "rgba(3,5,10,0.88)" : "rgba(238,241,246,0.8)");
+    grad.addColorStop(0.5, dark ? "rgba(3,5,10,0.32)" : "rgba(238,241,246,0.28)");
     grad.addColorStop(1, "rgba(3,5,10,0)");
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, 76);
+    ctx.fillRect(0, 0, canvas.width, end);
+    ctx.restore();
   }
 
   // ---------------------------------------------------------- attract mode

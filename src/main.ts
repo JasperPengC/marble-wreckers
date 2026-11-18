@@ -802,6 +802,7 @@ function importBackup(text: string): boolean {
 }
 
 function showSettings(): void {
+  const fromPause = !!run && paused;
   infoReturn = "menu";
   settingsScene({
     settings: meta.settings,
@@ -813,7 +814,8 @@ function showSettings(): void {
     onImport: importBackup,
     onNotice: setNotice,
     onRefresh: showSettings,
-    onBack: showMenu,
+    // 暂停面板进来的设置，返回时回到暂停面板；其余回主页。
+    onBack: fromPause ? showPause : showMenu,
   });
 }
 
@@ -840,6 +842,7 @@ function showPause(): void {
   showPauseScene(shell, t, {
     onResume: resume,
     onHelp: showHelp,
+    onSettings: showSettings,
     onRetreat: () => {
       paused = false;
       endRun(true);
