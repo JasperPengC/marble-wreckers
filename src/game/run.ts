@@ -380,7 +380,7 @@ function destroyBrick(run: Run, brick: BoardBrick): void {
     const cx = brick.x + brick.w / 2;
     const cy = brick.y + run.tower.offset + brick.h / 2;
     fx(run, { type: "blast", x: cx, y: cy, radius: 150 });
-    for (const other of bricksWithin(run.tower.bricks, cx, cy, 150)) {
+    for (const other of bricksWithin(run.tower.bricks, cx, cy, 150, run.tower.offset)) {
       const amount = computeBlastDamage(run.mods, other, brick.maxHp * 1.0);
       damageBrick(run, other, amount);
     }

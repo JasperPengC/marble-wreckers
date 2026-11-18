@@ -74,7 +74,7 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
       },
       h("span", { class: "btn-start__glow" }),
       icon("play"),
-      h("span", { class: "btn-start__label" }, t("menu.continueStage", { stage: String(targetStage) })),
+      h("span", { class: "btn-start__label" }, t("menu.startStage", { stage: String(targetStage) })),
       h("span", { class: "btn-start__coin" }, t("menu.stageSub", { diff: DIFF_NAME[targetDiff] }))
     ),
     ...(input.resumable

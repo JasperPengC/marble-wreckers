@@ -295,3 +295,23 @@ describe("pierce and lanes", () => {
     expect(three.ballsToLaunch).toBe(one.ballsToLaunch);
   });
 });
+
+import { makeBoardBrick } from "../src/game/board.ts";
+import { bricksWithin } from "../src/game/upgrades.ts";
+
+describe("bricksWithin 爆炸范围", () => {
+  test("必须计入楼体下沉偏移(炸视觉上邻近的砖,而非错位坐标的砖)", () => {
+    // 两块砖 x 相同,spawn y 分别为 0 与 32(上下相邻)
+    const a = makeBoardBrick(1, "spam", 0, 0, 100, 0, 50, 26, 10, 1, "a");
+    const b = makeBoardBrick(2, "spam", 1, 1, 100, 32, 50, 26, 10, 1, "b");
+    // 塔下沉 200px:炸 a(视觉中心 (125,-187),半径 20)→ 只命中 a;
+    // 旧行为(漏加 offset)会把世界坐标错位 232px 的 b 当成目标
+    const hit = bricksWithin([a, b], 125, -187, 20, -200).map((br) => br.id);
+    expect(hit).toContain(1);
+    expect(hit).not.toContain(2);
+    // 不传 offset 等价于 0(兼容旧调用):爆心取 b 的静止中心时两块都在范围
+    const hitZero = bricksWithin([a, b], 125, 45, 33).map((br) => br.id);
+    expect(hitZero).toContain(1);
+    expect(hitZero).toContain(2);
+  });
+});

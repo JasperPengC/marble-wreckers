@@ -461,13 +461,15 @@ export function bricksWithin(
   bricks: BoardBrick[],
   cx: number,
   cy: number,
-  radius: number
+  radius: number,
+  /** 楼体下沉偏移:目标砖的实际 y = brick.y + offset。漏加会炸到错位的砖。 */
+  offset = 0
 ): BoardBrick[] {
   const out: BoardBrick[] = [];
   for (const brick of bricks) {
     if (!brick.alive) continue;
     const bx = brick.x + brick.w / 2;
-    const by = brick.y + brick.h / 2;
+    const by = brick.y + offset + brick.h / 2;
     if (Math.hypot(bx - cx, by - cy) <= radius) out.push(brick);
   }
   return out;

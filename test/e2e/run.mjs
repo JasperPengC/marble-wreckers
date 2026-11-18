@@ -1678,7 +1678,7 @@ async function testSceneActions(ctx) {
   await pasteBackup(JSON.stringify(withRun));
   await clickSelector("#overlay .backup-actions .btn", 1);
   await clickSelector("#overlay .scene__back");
-  await clickOverlayButtonByTokens(["Resume", "继续上次"]);
+  await clickOverlayButtonByTokens(["Resume", "回到中断"]);
   await waitPhase("aim", { label: "导入单局后继续游戏" });
   await ev("window.__win()");
   await waitFor(() => ev("document.querySelectorAll('#overlay .card').length === 3"),
@@ -1763,7 +1763,7 @@ async function testResume(ctx) {
   const state = await dbg();
   await ctx.shot("08b-after-reload");
   const resumeButton = menu.buttons.find((button) =>
-    ["继续上次拆除", "Resume Run"].some((token) => button.text.includes(token))
+    ["回到中断的对局", "Resume interrupted"].some((token) => button.text.includes(token))
   );
 
   if (!resumeButton) {
