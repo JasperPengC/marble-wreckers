@@ -109,8 +109,9 @@ body {
 }
 
 /* A scene panel owns the whole stage while open: tuck the resource chips away
-   so they cannot cover its back button (the fabs stay reachable top-right). */
-.overlay:not(.overlay--title) ~ .hud-top .hud-chips {
+   so they cannot cover its back button (the fabs stay reachable top-right).
+   Keyed on [hidden] so closing the scene restores the chips immediately. */
+.overlay:not([hidden]):not(.overlay--title) ~ .hud-top .hud-chips {
   visibility: hidden;
 }
 
@@ -6207,9 +6208,8 @@ body,
   padding-bottom: var(--safe-area-bottom);
 }
 
-/* 场景打开时，右上悬浮钮下移到场景标题栏之下，不再压住标题/角标；
-   徽章已由上方规则隐藏，这里只移动 .hud-actions 所在行。 */
-.overlay:not(.overlay--title) ~ .hud-top {
+/* 场景打开时，右上悬浮钮下移到场景标题栏之下，不再压住标题/角标。 */
+.overlay:not([hidden]):not(.overlay--title) ~ .hud-top {
   top: calc(var(--safe-area-top) + 48px);
   padding-top: 0;
 }

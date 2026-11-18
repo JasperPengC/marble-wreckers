@@ -132,7 +132,7 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
         victory
           ? h(
               "button",
-              { class: "btn btn--primary", onclick: () => input.onNext?.() ?? input.onRestart() },
+              { class: "btn btn--primary", onclick: () => (input.onNext ?? input.onRestart)() },
               icon("play"),
               input.onNext ? t("victory.next") : t("death.restart")
             )
