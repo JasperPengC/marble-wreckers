@@ -132,8 +132,6 @@ body {
   border-radius: 999px;
   background: var(--panel-2);
   border: 2px solid var(--panel-border);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
@@ -190,8 +188,6 @@ body {
   border: 2px solid var(--panel-border);
   background: var(--panel-2);
   color: var(--primary);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow:
     0 3px 0 rgba(0, 0, 0, 0.45),
     0 6px 14px rgba(0, 0, 0, 0.3);
@@ -6271,8 +6267,6 @@ body,
   border: 2px solid var(--panel-border);
   border-radius: 26px;
   background: var(--panel-strong-2);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
