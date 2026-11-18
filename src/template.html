@@ -2,6 +2,12 @@
   <section class="stage" id="stage">
     <canvas id="board"></canvas>
 
+    <!-- 关卡信息牌:常驻显示 当前关卡 · 难度 · 楼内进度 -->
+    <div class="stage-plate" id="stage-plate" hidden>
+      <b id="stage-plate-title">—</b>
+      <i class="stage-plate__diff" id="stage-plate-diff"></i>
+      <span class="stage-plate__progress" id="stage-plate-progress"></span>
+    </div>
     <div class="boss-bar" id="boss-bar" hidden>
       <span class="boss-bar__label">镇站巨楼</span>
       <i class="boss-bar__track"><b id="boss-fill"></b></i>

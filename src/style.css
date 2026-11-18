@@ -6592,3 +6592,59 @@ body,
   opacity: 1;
   font-weight: 800;
 }
+
+
+/* 关卡信息牌:当前关卡 · 难度 · 楼内进度,常驻对局顶部居中 */
+.stage-plate {
+  position: absolute;
+  /* 徽章行(约 44px 高)之下、Boss 血条同一带:两者互斥显示 */
+  top: calc(var(--safe-area-top) + 50px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 2px solid var(--panel-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.stage-plate b {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--primary);
+}
+
+.stage-plate__diff {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1.5px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stage-plate__diff[data-diff="easy"] { color: #8ef0a8; }
+.stage-plate__diff[data-diff="hard"] { color: #ffb347; }
+.stage-plate__diff[data-diff="hell"] { color: #ff7a5f; }
+
+:root[data-theme="light"] .stage-plate__diff[data-diff="easy"] { color: #1d8a3c; }
+:root[data-theme="light"] .stage-plate__diff[data-diff="hard"] { color: #a8640a; }
+:root[data-theme="light"] .stage-plate__diff[data-diff="hell"] { color: #c23a26; }
+
+.stage-plate__progress {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+  opacity: 0.75;
+}
+
+.stage-plate[hidden] {
+  display: none;
+}

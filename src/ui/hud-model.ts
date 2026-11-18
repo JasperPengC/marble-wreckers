@@ -14,6 +14,7 @@ import { upgradeById, upgradeCategory } from "../game/upgrades.ts";
 import type { SkillGrade, UpgradeCategory } from "../game/upgrades.ts";
 import { relicById } from "../game/relics.ts";
 import { accountPower } from "../game/meta.ts";
+import { STAGE_TOWERS } from "../game/stage.ts";
 
 export interface HudReadout {
   /** 本局伤害（热度）；不在局内时是历史最高分。 */
@@ -25,6 +26,10 @@ export interface HudReadout {
   shield: number | null;
   /** 关卡制:本局所属关卡(无尽/每日为 null)。 */
   stage: number | null;
+  /** 难度(关卡制);无尽/每日为 null。 */
+  difficulty: "easy" | "hard" | "hell" | null;
+  /** 楼内进度文本,如 "1/3";非关卡制为 null。 */
+  towerProgress: string | null;
   /** 账号战力。 */
   power: number;
 }
@@ -95,6 +100,8 @@ export function buildHudModel(
         tower: meta.bestTower >= 0 ? String(meta.bestTower + 1) : "—",
         shield: null,
         stage: null,
+        difficulty: null,
+        towerProgress: null,
         power: accountPower(meta),
       },
       skills: [],
@@ -134,6 +141,8 @@ export function buildHudModel(
       tower: String(run.tower.spec.index + 1),
       shield: run.shields,
       stage: run.stage,
+      difficulty: run.difficulty,
+      towerProgress: run.stage != null ? `${Math.min(run.stats.towersCleared + 1, STAGE_TOWERS)}/${STAGE_TOWERS}` : null,
       power: accountPower(meta),
     },
     skills,

@@ -72,6 +72,10 @@ type TemplateElements = {
   "hud-tower": HTMLElement;
   "hud-shield": HTMLElement;
   "hud-power": HTMLElement;
+  "stage-plate": HTMLElement;
+  "stage-plate-title": HTMLElement;
+  "stage-plate-diff": HTMLElement;
+  "stage-plate-progress": HTMLElement;
   overlay: HTMLElement;
   notice: HTMLElement;
   player: HTMLElement;
@@ -253,7 +257,7 @@ const overlay = getOverlay();
 
 const hud = createHudView({
   onSkill: (id) => showSkill(id),
-  t: (key) => t(key),
+  t: (key, values) => t(key, values),
   el: (id) => element(id) as HTMLElement,
 });
 
@@ -342,13 +346,12 @@ function announceTower(): void {
   lastShields = run.shields;
   const spec = run.tower.spec;
   const stagePrefix = run.stage != null ? `第 ${run.stage} 关 · ` : "";
+  const diffName = run.difficulty ? t(`stage.${run.difficulty}`) : "";
+  const stageTag = run.stage != null ? `第 ${run.stage} 关 · ${diffName} · ` : "";
   if (spec.isBoss) {
-    showBanner("⚠ 镇站巨楼来袭!", stagePrefix + "打穿护甲 · 捣毁核心", "danger");
+    showBanner("⚠ 镇站巨楼来袭!", stageTag + "打穿护甲 · 捣毁核心", "danger");
   } else {
-    showBanner(
-      stagePrefix + "第 " + (run.stats.towersCleared + 1) + " 栋",
-      "清空整栋楼 · 抽一次强化"
-    );
+    showBanner(stageTag + "第 " + (run.stats.towersCleared + 1) + " 栋", "清空整栋楼 · 抽一次强化");
   }
 }
 
@@ -1094,10 +1097,14 @@ function loop(now: number): void {
         bossBar.dataset.armorMax = String(progress.layersMax);
         const label = bossBar.querySelector(".boss-bar__label");
         if (label) {
+          const stagePrefix =
+            run.stage != null && run.difficulty != null
+              ? t("stage.bossPrefix", { stage: String(run.stage), diff: t(`stage.${run.difficulty}`) })
+              : "";
           label.textContent =
             progress.layers > 0
-              ? `镇站巨楼 · 护甲 ${progress.layers}/${progress.layersMax}`
-              : "镇站巨楼 · 核心暴露";
+              ? `${stagePrefix}镇站巨楼 · 护甲 ${progress.layers}/${progress.layersMax}`
+              : `${stagePrefix}镇站巨楼 · 核心暴露`;
         }
       } else {
         bossBar.hidden = true;

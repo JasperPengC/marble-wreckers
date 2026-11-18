@@ -13,12 +13,33 @@ export interface HudView {
 interface HudOptions {
   /** 打开某个已获得强化的详情。 */
   onSkill(id: string): void;
-  t(key: string): string;
+  t(key: string, values?: Record<string, unknown>): string;
   el(id: string): HTMLElement;
 }
 
+const DIFF_KEYS = { easy: "stage.easy", hard: "stage.hard", hell: "stage.hell" } as const;
+
 export function createHudView(opts: HudOptions): HudView {
   let legendRendered = false;
+
+  /** 关卡信息牌:对局中常驻,当前关卡 · 难度 · 楼内进度。 */
+  function updateStagePlate(model: HudModel): void {
+    const plate = document.getElementById("stage-plate");
+    if (!plate) return;
+    const inStage = model.inRun && model.readout.stage != null && model.readout.difficulty != null;
+    const bossVisible = !document.getElementById("boss-bar")?.hidden;
+    plate.hidden = !inStage || bossVisible;
+    if (!inStage) return;
+    const title = document.getElementById("stage-plate-title");
+    const diff = document.getElementById("stage-plate-diff");
+    const progress = document.getElementById("stage-plate-progress");
+    if (title) title.textContent = opts.t("stage.plate", { stage: String(model.readout.stage) });
+    if (diff) {
+      diff.textContent = opts.t(DIFF_KEYS[model.readout.difficulty ?? "easy"]);
+      diff.dataset.diff = model.readout.difficulty ?? "easy";
+    }
+    if (progress) progress.textContent = opts.t("stage.progress", { n: model.readout.towerProgress ?? "" });
+  }
 
   function updateHUD(model: HudModel): void {
     const { readout } = model;
@@ -26,6 +47,7 @@ export function createHudView(opts: HudOptions): HudView {
     opts.el("hud-coins").textContent = fmtNum(readout.coins);
     opts.el("hud-tower").textContent = readout.stage != null ? String(readout.stage) : readout.tower;
     opts.el("hud-power").textContent = fmtNum(readout.power);
+    updateStagePlate(model);
 
     const shield = opts.el("hud-shield");
     if (readout.shield === null) {
