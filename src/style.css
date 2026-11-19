@@ -6965,16 +6965,15 @@ body,
    v16 — 选中态看得清 + Dock 去色块
    ========================================================================= */
 
-/* 分类选中:金色实底 + 超大超粗深色字,对比拉满 */
+/* 分类选中:暗底金字,100% 对比 */
 .tabs .tab--on {
-  background: linear-gradient(180deg, #ffe9a8, #e9bb3c) !important;
-  color: #1a1005 !important;
-  border-color: #8f6a1c !important;
-  text-shadow: none !important;
-  font-size: 13px !important;
+  background: rgba(5, 8, 15, 0.85) !important;
+  color: var(--accent) !important;
+  border-color: rgba(224, 182, 76, 0.5) !important;
+  text-shadow: 0 0 8px rgba(224, 182, 76, 0.3) !important;
+  font-size: 12px !important;
   font-weight: 900 !important;
-  letter-spacing: 0.12em !important;
-  text-stroke: none !important;
+  letter-spacing: 0.1em !important;
   -webkit-text-stroke: 0 !important;
   filter: none !important;
   opacity: 1 !important;
@@ -7261,6 +7260,23 @@ body,
 .quest-row--claimed,
 .ach-row--claimed {
   opacity: 0.55;
+}
+
+.quest-row,
+.ach-row,
+.quest-row__text,
+.ach-row__text,
+.quest-row__name,
+.ach-row__name,
+.quest-row__desc,
+.ach-row__desc {
+  text-align: left;
+}
+
+.quest-list,
+.ach-list {
+  align-self: stretch;
+  width: 100%;
 }
 
 .quest-row__name,
