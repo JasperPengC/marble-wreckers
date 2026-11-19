@@ -6105,20 +6105,16 @@ body,
   margin-top: auto;
   display: flex;
   align-items: stretch;
-  gap: 2px;
+  gap: 4px;
   width: min(440px, 100%);
-  padding: 10px calc(8px + var(--safe-area-right)) calc(10px + var(--safe-area-bottom))
-    calc(8px + var(--safe-area-left));
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px 20px 0 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 40%),
-    var(--panel-strong-2);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 -12px 36px rgba(0, 0, 0, 0.5);
+  padding: 4px calc(10px + var(--safe-area-right)) calc(12px + var(--safe-area-bottom))
+    calc(10px + var(--safe-area-left));
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .dock__item {
@@ -7160,3 +7156,69 @@ body,
 
 
 
+
+/* =========================================================================
+   Dock 按钮 = 独立游戏石板,不是导航栏。每颗有自己的金属质感。
+   ========================================================================= */
+
+.dock .menu-item.dock__item,
+:root[data-theme="light"] .dock .menu-item.dock__item {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 40%),
+    linear-gradient(180deg, var(--panel-1), var(--panel-2));
+  border: 2px solid var(--panel-border);
+  border-bottom-color: rgba(0, 0, 0, 0.6);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 0 rgba(0, 0, 0, 0.35),
+    0 8px 16px rgba(0, 0, 0, 0.3);
+  min-height: 64px;
+}
+
+/* 按压:物理下沉 */
+.dock .menu-item.dock__item:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* 图标座去掉凹槽圆底,图标直接大尺寸居中 */
+.dock .dock__item .menu-item__medal {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.dock .dock__item .menu-item__medal svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2.6;
+  filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.7));
+}
+
+/* 标签:贴底,小号,半透明 */
+.dock .dock__item .menu-item__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  opacity: 0.7;
+  text-shadow: none;
+}
+
+/* 顶部高光棱线:整排共享一条,不再是容器的边框 */
+.dock::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, rgba(224, 182, 76, 0.3), transparent);
+  pointer-events: none;
+}
