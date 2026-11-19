@@ -401,6 +401,9 @@ function updateBuild(): void {
 
 function setRunChrome(active: boolean): void {
   element("pause").hidden = !active;
+  // 帮助钮常显(场景打开时由 CSS 隐藏);设置钮只在主页可见
+  element("hud-help").hidden = false;
+  element("hud-settings").hidden = active;
   if (!active) element("danger").hidden = true;
 }
 
@@ -415,6 +418,7 @@ function showMenu(): void {
   setRunChrome(false);
   updateBuild();
   ensureDailyQuests(meta, dailySeed());
+  element("hud-settings").hidden = false; // 设置只在主页展示
   showMenuScene(overlay, t, {
     bestTower: meta.bestTower,
     bestScore: meta.bestScore,
@@ -885,6 +889,14 @@ window.addEventListener("keydown", (event) => {
 window.addEventListener("keyup", (event) => {
   if (event.code === "ArrowLeft" || event.code === "KeyA") keys.left = false;
   if (event.code === "ArrowRight" || event.code === "KeyD") keys.right = false;
+});
+
+element("hud-help").addEventListener("click", () => {
+  showHelp();
+});
+
+element("hud-settings").addEventListener("click", () => {
+  showSettings();
 });
 
 element("pause").addEventListener("click", () => {
@@ -1464,7 +1476,7 @@ function hydrateIcons(): void {
   for (const [idName, iconName, label] of [
     ["pause", "pause", t("pause.button")],
     ["build-fab", "critPower", t("build.title")],
-    ["skill-blast", "bomb", t("skills.blast")],
+    ["skill-blast", "impact", t("skills.blast")],
     ["skill-slow", "speed", t("skills.slow")],
   ] as const) {
     const button = document.getElementById(idName);

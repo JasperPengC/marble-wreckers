@@ -92,22 +92,12 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
       "nav",
       { class: "dock" },
       dockItem(t("menu.stagesShort"), "tower", () => input.onStages()),
-      dockItem(t("menu.dailyShort"), "calendar", () => input.onDaily()),
-      dockItem(t("menu.shopShort"), "shop", () => input.onShop()),
+      dockItem(t("menu.dailyDock"), "calendar", () => input.onDaily()),
+      dockItem(t("menu.shopDock"), "shop", () => input.onShop()),
       dockItem(t("menu.questsShort"), "gem", () => input.onQuests()),
-      dockItem(t("menu.collectionShort"), "book", () => input.onCollection()),
-      dockItem(t("menu.skills"), "critPower", () => input.onSkills())
+      dockItem(t("menu.collectionDock"), "book", () => input.onCollection()),
+      dockItem(t("menu.skillsDock"), "critPower", () => input.onSkills())
     ),
-    h(
-      "button",
-      { class: "fab fab--menu", "aria-label": t("menu.settings"), onclick: () => input.onSettings() },
-      icon("gear")
-    ),
-    h(
-      "button",
-      { class: "fab fab--help", "aria-label": t("menu.help"), onclick: () => input.onHelp() },
-      icon("help")
-    )
   ];
   overlay.root.append(...children.filter((node): node is Node => node !== null));
   overlay.show();

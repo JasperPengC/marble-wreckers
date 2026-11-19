@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS } from "../game/meta.ts";
+import { icon } from "../ui/icons.ts";
 import { fmtNum, h } from "../ui/overlays.ts";
 import type { SceneShell, Translate } from "./types.ts";
 
@@ -32,12 +33,18 @@ export function showCollectionScene(shell: SceneShell, t: Translate, input: Coll
               class:
                 "ach-row" +
                 (has ? " ach-row--unlocked" : "") +
-                (claimed ? " ach-row--claimed" : ""),
+                (claimed ? " ach-row--claimed" : "") +
+                (claimable ? " ach-row--claimable" : ""),
             },
+            h(
+              "span",
+              { class: "ach-row__medal" + (has ? " ach-row__medal--on" : "") },
+              icon(has ? "gem" : "help")
+            ),
             h(
               "div",
               { class: "ach-row__text" },
-              h("span", { class: "ach-row__name" }, (has ? "🏅 " : "🔒 ") + def.name),
+              h("span", { class: "ach-row__name" }, def.name),
               h("span", { class: "ach-row__desc" }, def.desc)
             ),
             has

@@ -6175,11 +6175,7 @@ body,
 }
 
 /* Settings gear: circular fab above the dock's right edge. */
-.fab--menu {
-  position: absolute;
-  right: calc(var(--safe-area-right) + 12px);
-  bottom: calc(var(--safe-area-bottom) + 84px);
-}
+
 
 /* Short landscape: keep the dock usable, drop the vertical spacing. */
 @media (max-height: 520px) {
@@ -6330,9 +6326,6 @@ body,
 }
 
 /* 齿轮悬浮钮跟着新 Dock 上移一档。 */
-.fab--menu {
-  bottom: calc(var(--safe-area-bottom) + 100px);
-}
 
 /* =========================================================================
    v14 — 选关卡片 / 任务行 / 主页左下问号 / 战力徽章
@@ -6344,11 +6337,6 @@ body,
 }
 
 /* 主页左下角「?」与右下角齿轮对称。 */
-.fab--help {
-  position: absolute;
-  left: calc(var(--safe-area-left) + 12px);
-  bottom: calc(var(--safe-area-bottom) + 100px);
-}
 
 /* 选关卡片 */
 .stage-grid {
@@ -6874,10 +6862,6 @@ body,
   z-index: 9;
 }
 
-#skill-slow {
-  left: calc(var(--safe-area-left) + 68px);
-}
-
 .skill-btn__ico {
   display: inline-flex;
   width: 20px;
@@ -6969,4 +6953,179 @@ body,
   width: 100%;
   min-height: 38px;
   border-radius: 10px;
+}
+
+/* =========================================================================
+   v16 — 选中态看得清 + Dock 去色块
+   ========================================================================= */
+
+/* 分类选中:金色实底,一眼可辨(压过所有旧皮肤覆盖) */
+.tabs .tab--on {
+  background: linear-gradient(180deg, #ffe9a8, #e9bb3c) !important;
+  color: #241a05 !important;
+  border-color: #8f6a1c !important;
+  text-shadow: none !important;
+}
+
+.tabs .tab {
+  color: rgba(232, 230, 227, 0.55) !important;
+}
+
+:root[data-theme="light"] .tabs .tab--on {
+  background: linear-gradient(180deg, #ffe08a, #e0b232) !important;
+  color: #241a05 !important;
+}
+
+/* Dock 项:压平所有旧皮肤残留(底/边/影),图标直接站在 Dock 上 */
+.dock .menu-item.dock__item,
+:root[data-theme="light"] .dock .menu-item.dock__item {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-bottom: none !important;
+  min-height: 56px;
+  padding: 6px 2px;
+}
+
+.dock .menu-item.dock__item::after,
+.dock .menu-item.dock__item::before {
+  display: none !important;
+}
+
+.dock__item .menu-item__medal,
+:root[data-theme="light"] .dock__item .menu-item__medal {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dock__item:hover .menu-item__medal {
+  transform: translateY(-2px);
+}
+
+.dock__item .menu-item__medal {
+  transition: transform 0.15s ease;
+}
+
+/* 主动技能:左下角纵排两枚 */
+.skill-btn {
+  position: absolute;
+  bottom: calc(var(--safe-area-bottom) + 12px);
+  left: calc(var(--safe-area-left) + 12px);
+  z-index: 9;
+}
+
+#skill-slow {
+  bottom: calc(var(--safe-area-bottom) + 68px);
+}
+
+/* 成就行:金圆徽 + 层级布局 */
+.ach-row__medal {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(128, 140, 160, 0.15);
+  color: rgba(200, 210, 224, 0.5);
+}
+
+.ach-row__medal svg {
+  width: 17px;
+  height: 17px;
+}
+
+.ach-row__medal--on {
+  background: linear-gradient(180deg, rgba(224, 182, 76, 0.25), rgba(224, 182, 76, 0.08));
+  color: var(--accent);
+  box-shadow: 0 0 0 1.5px rgba(224, 182, 76, 0.4);
+}
+
+.ach-row--claimable {
+  border-color: var(--accent) !important;
+}
+
+/* =========================================================================
+   v17 — 原生游戏化 UI:右上设置/帮助群组、Dock 精修、技能钮居中对称
+   ========================================================================= */
+
+/* 主页右上角:帮助 + 设置小圆钮(替代悬浮孤立的左右圆钮) */
+.menu-fabs {
+  position: absolute;
+  top: calc(var(--safe-area-top) + 10px);
+  right: calc(var(--safe-area-right) + 10px);
+  display: flex;
+  gap: 8px;
+  z-index: 8;
+}
+
+.menu-fabs .fab--sm {
+  width: 40px;
+  height: 40px;
+}
+
+.menu-fabs .fab--sm svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* fab 游戏化:金边 + 图标金色,不再像网页按钮 */
+.fab {
+  border: 2px solid rgba(224, 182, 76, 0.55);
+  color: var(--accent);
+  background: var(--panel-1);
+}
+
+.fab svg {
+  color: var(--accent);
+}
+
+:root[data-theme="light"] .fab {
+  border-color: rgba(168, 116, 18, 0.5);
+  color: #a87412;
+}
+
+:root[data-theme="light"] .fab svg {
+  color: #a87412;
+}
+
+/* 对局技能钮:居中对称排在弹珠计数两侧 */
+.skill-btn {
+  bottom: calc(var(--safe-area-bottom) + 17px);
+}
+
+#skill-blast {
+  left: calc(50% - 102px);
+}
+
+#skill-slow {
+  left: calc(50% + 56px);
+}
+
+#skill-slow {
+  bottom: calc(var(--safe-area-bottom) + 17px);
+}
+
+/* 顶部右侧圆钮组:小尺寸 */
+.hud-actions .fab--sm {
+  width: 40px;
+  height: 40px;
+}
+
+.hud-actions .fab--sm svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 场景面板打开时:帮助/设置钮让位(场景栏与暂停卡片内均有入口) */
+.overlay:not([hidden]):not(.overlay--title) ~ .hud-top .fab--help,
+.overlay:not([hidden]):not(.overlay--title) ~ .hud-top .fab--settings {
+  visibility: hidden;
+}
+
+/* 主页(标题浮层)时:设置钮保持可见(由 JS 控制 hidden 的兜底) */
+.overlay--title ~ .hud-top .fab--settings {
+  visibility: visible;
 }
