@@ -179,10 +179,11 @@ body {
   pointer-events: auto;
 }
 
-/* Circular floating icon button (pause / help / settings). */
+/* Circular floating icon button (pause / help / settings / skills / build).
+   统一 40px:所有悬浮圆钮同尺寸同基线,也不至于挡住底部拖拽瞄准区。 */
 .fab {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   border-radius: 50%;
   border: 2px solid var(--panel-border);
@@ -201,8 +202,8 @@ body {
 }
 
 .fab svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .fab:active {
@@ -616,8 +617,8 @@ body {
 
 .fab--build {
   position: absolute;
-  right: calc(var(--safe-area-right) + 12px);
-  bottom: calc(var(--safe-area-bottom) + 12px);
+  right: calc(var(--safe-area-right) + 14px);
+  bottom: calc(var(--safe-area-bottom) + 14px);
   z-index: 9;
 }
 
@@ -7035,18 +7036,6 @@ body,
   transition: transform 0.15s ease;
 }
 
-/* 主动技能:左下角纵排两枚 */
-.skill-btn {
-  position: absolute;
-  bottom: calc(var(--safe-area-bottom) + 12px);
-  left: calc(var(--safe-area-left) + 12px);
-  z-index: 9;
-}
-
-#skill-slow {
-  bottom: calc(var(--safe-area-bottom) + 68px);
-}
-
 /* 成就行:金圆徽 + 层级布局 */
 .ach-row__medal {
   flex: 0 0 auto;
@@ -7119,21 +7108,17 @@ body,
   color: #a87412;
 }
 
-/* 对局技能钮:居中对称排在弹珠计数两侧 */
+/* 对局技能钮:左右对称骑在炮台两侧,底边距与构筑钮一致 */
 .skill-btn {
-  bottom: calc(var(--safe-area-bottom) + 17px);
+  bottom: calc(var(--safe-area-bottom) + 14px);
 }
 
 #skill-blast {
-  left: calc(50% - 102px);
+  left: calc(50% - 104px);
 }
 
 #skill-slow {
-  left: calc(50% + 56px);
-}
-
-#skill-slow {
-  bottom: calc(var(--safe-area-bottom) + 17px);
+  left: calc(50% + 64px);
 }
 
 /* 顶部右侧圆钮组:小尺寸 */

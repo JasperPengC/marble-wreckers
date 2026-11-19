@@ -2,7 +2,11 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { connectToPage, launchChrome, probeCdpPort, sleep } from "../test/e2e/cdp.mjs";
+
+const run = promisify(execFile);
 
 const url = process.env.README_URL ?? "http://127.0.0.1:5194/";
 const port = Number(process.env.README_CDP_PORT ?? 9337);
@@ -177,9 +181,23 @@ try {
         geometry.images.some(image => Math.abs(image.natural - image.rendered) > 0.0001)) {
       throw new Error(`手机机框或截图比例不一致：${JSON.stringify(geometry)}`);
     }
-    const { data } = await client.send("Page.captureScreenshot", { format: "webp", quality: 90 });
+    // 先拿 PNG,优先用 cwebp -sharp_yuv 编码:小号灰字叠透明底,Chrome 自带
+    // WebP 编码会把文字压成糊块(q100 也不行且体积 6 倍),sharp_yuv 才保得住笔画。
+    const { data } = await client.send("Page.captureScreenshot", { format: "png" });
+    const png = path.join(temporary, `hero-${theme}.png`);
+    await fs.writeFile(png, Buffer.from(data, "base64"));
+    let buffer;
+    try {
+      const encoded = path.join(temporary, `hero-${theme}.webp`);
+      await run("cwebp", ["-q", "88", "-sharp_yuv", png, "-o", encoded]);
+      buffer = await fs.readFile(encoded);
+    } catch {
+      // 回退:没有 cwebp 时让 Chrome 直接出 WebP,质量拉满减少文字糊化
+      const fallback = await client.send("Page.captureScreenshot", { format: "webp", quality: 100 });
+      buffer = Buffer.from(fallback.data, "base64");
+    }
     const file = path.join(output, `hero-${theme}.webp`);
-    await fs.writeFile(file, withProvenance(Buffer.from(data, "base64"), theme));
+    await fs.writeFile(file, withProvenance(buffer, theme));
     await fs.writeFile(file + ".json", JSON.stringify({
       prompt: `Source: real screenshots of this repository game in Chrome, 390x900 DPR 2 with simulated safe-area insets, ${theme} theme. Captured and composed with authored phone-frame HTML/CSS by scripts/readme-assets.mjs. No generated game imagery.`,
       createdAt: new Date().toISOString(),
