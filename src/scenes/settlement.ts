@@ -17,7 +17,12 @@ export interface SettlementSceneInput {
   onNext?(): void;
   onStages?(): void;
   /** 关卡制:通关时带奖励与难度;失败时带失败关卡。 */
-  victory?: { stage: number; difficulty: Difficulty; rewardBonus: number } | null;
+  victory?: {
+    stage: number;
+    difficulty: Difficulty;
+    rewardBonus: number;
+    weekly?: boolean;
+  } | null;
   failure?: { stage: number; difficulty: Difficulty } | null;
 }
 
@@ -83,7 +88,9 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
         ? t("death.stageFail", { stage: String(failure.stage) })
         : t("death.title"),
     meta: victory
-      ? t("victory.diff", { diff: DIFF_LABEL[victory.difficulty] })
+      ? victory.weekly
+        ? t("weekly.title")
+        : t("victory.diff", { diff: DIFF_LABEL[victory.difficulty] })
       : isRecord
         ? "★ " + t("death.record")
         : "",

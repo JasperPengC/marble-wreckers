@@ -6897,3 +6897,76 @@ body,
 .skill-btn:disabled .fab__badge {
   opacity: 0.5;
 }
+
+/* 成就行:解锁态/领取态 */
+.ach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(430px, 100%);
+  margin: 0 auto;
+}
+
+.ach-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px solid var(--panel-border);
+  border-radius: 12px;
+  background: var(--panel-2);
+  opacity: 0.55;
+}
+
+.ach-row--unlocked {
+  opacity: 1;
+}
+
+.ach-row--claimed {
+  opacity: 0.7;
+}
+
+.ach-row__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ach-row__name {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ach-row__desc {
+  font-size: 10.5px;
+  opacity: 0.6;
+}
+
+.ach-row__claim {
+  min-height: 30px;
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+.ach-row__claim:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 每周挑战卡:金色描边突出 */
+.stage-card--weekly {
+  border-color: var(--accent);
+  gap: 8px;
+}
+
+.stage-card--weekly .stage-card__no {
+  color: var(--accent);
+}
+
+.stage-weekly__go {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 10px;
+}

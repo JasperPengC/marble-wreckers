@@ -6,6 +6,9 @@ import type { SceneShell, Translate } from "./types.ts";
 export interface SettingsSceneInput {
   settings: Readonly<PlayerSettings>;
   savedAt?: string;
+  skins?: { owned: readonly string[]; selected: string };
+  meta?: { stageUnlocked: number; hellClears: number };
+  onSkin(id: string): void;
   /** 主题「自动」档的文案：快应用跟随论坛，普通网页跟随系统。 */
   themeFollowLabel: string;
   onChange(patch: Partial<PlayerSettings>): void;
@@ -86,6 +89,39 @@ export function createSettingsScene(shell: SceneShell, t: Translate): (input: Se
         return node;
       })
     );
+    const skinDefs = [
+      { id: "classic", label: t("settings.skinClassic") },
+      { id: "gold", label: t("settings.skinGold") },
+      { id: "neon", label: t("settings.skinNeon") },
+    ];
+    const skinUnlocked = (id: string): boolean =>
+      id === "classic" ||
+      (id === "gold" && (input.meta?.stageUnlocked ?? 1) >= 6) ||
+      (id === "neon" && (input.meta?.hellClears ?? 0) >= 1);
+    const skinSeg = h(
+      "div",
+      { class: "seg" },
+      ...skinDefs.map((def) =>
+        h(
+          "button",
+          {
+            class:
+              "seg__opt" +
+              (input.skins?.selected === def.id ? " seg__opt--on" : "") +
+              (skinUnlocked(def.id) ? "" : " seg__opt--locked"),
+            title: skinUnlocked(def.id) ? "" : t("stages.skinLocked"),
+            onclick: () => {
+              if (!skinUnlocked(def.id)) {
+                input.onNotice(t("stages.skinLocked"));
+                return;
+              }
+              input.onSkin(def.id);
+            },
+          },
+          def.label
+        )
+      )
+    );
     const locale = h(
       "select",
       { class: "select" },
@@ -129,6 +165,7 @@ export function createSettingsScene(shell: SceneShell, t: Translate): (input: Se
           settingRow(t("settings.sound"), t("settings.soundHint"), sound),
       settingRow(t("settings.music"), t("settings.musicHint"), music),
           settingRow(t("settings.theme"), t("settings.themeHint"), themeSel),
+      settingRow(t("skins.title"), t("settings.skinHint"), skinSeg),
           settingRow(t("settings.locale"), "", locale)
         ),
         h(

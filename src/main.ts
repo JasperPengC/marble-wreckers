@@ -53,8 +53,10 @@ import { createStagesScene } from "./scenes/stages.ts";
 import { createQuestsScene } from "./scenes/quests.ts";
 import {
   accountPower,
+  claimAchievementReward,
   claimQuest,
   ensureDailyQuests,
+  weekKey,
 } from "./game/meta.ts";
 import {
   DIFFICULTIES,
@@ -202,6 +204,7 @@ function applyTheme(theme: MiniAppTheme): void {
   };
   audio.setEnabled(meta.settings.sound);
   music.setEnabled(meta.settings.music);
+  renderer.setSkin(meta.skins.selected);
   renderer.setPalette(palette);
   localize();
 }
@@ -468,8 +471,14 @@ function startTutorialIfFirstRun(
 function showStages(): void {
   infoReturn = "menu";
   stagesScene({
-    meta: { stages: meta.stages, stageUnlocked: meta.stageUnlocked, coins: meta.coins },
+    meta: {
+      stages: meta.stages,
+      stageUnlocked: meta.stageUnlocked,
+      coins: meta.coins,
+      weekly: meta.weekly,
+    },
     power: accountPower(meta),
+    onWeekly: () => startRun({ stage: 8, difficulty: "hell", weekly: true }),
     onStart: (stage, difficulty) => startRun({ stage, difficulty }),
     onBack: showMenu,
   });
@@ -511,13 +520,19 @@ function resumeRun(restored: Run): void {
 }
 
 function startRun(
-  config: { daily?: boolean; stage?: number | null; difficulty?: Difficulty | null } = {}
+  config: {
+    daily?: boolean;
+    stage?: number | null;
+    difficulty?: Difficulty | null;
+    weekly?: boolean;
+  } = {}
 ): void {
   const daily = config.daily === true;
+  const weekly = config.weekly === true;
   const stage = daily ? null : config.stage ?? null;
   const difficulty = daily ? null : config.difficulty ?? null;
-  const seed = daily ? dailySeed() : `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
-  run = createRun(seed, meta.shop, daily, stage, difficulty);
+  const seed = weekly ? `week-${weekKey()}` : daily ? dailySeed() : `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+  run = createRun(seed, meta.shop, daily, stage, difficulty, weekly);
   savedSnapshot = null;
   void host.save("run", null);
   deathShown = false;
@@ -694,7 +709,20 @@ function showDraft(): void {
 
 function showCollection(): void {
   infoReturn = "menu";
-  showCollectionScene(shell, t, { achievements: meta.achievements, onBack: showMenu });
+  showCollectionScene(shell, t, {
+    achievements: meta.achievements,
+    claims: meta.achievementClaims,
+    onClaim: (id) => {
+      const reward = claimAchievementReward(meta, id);
+      if (reward > 0) {
+        void host.save("meta", meta);
+        setNotice(t("quests.claimedToast", { n: String(reward) }));
+        updateHUD();
+      }
+      showCollection();
+    },
+    onBack: showMenu,
+  });
 }
 
 function showDeath(
@@ -752,6 +780,27 @@ function stageVictory(): void {
     difficulty,
     victory: true,
   });
+  // 皮肤解锁:推进到第 6 关解锁黄金皮肤;地狱通关解锁霓虹皮肤
+  if (meta.stageUnlocked >= 6 && !meta.skins.owned.includes("gold")) {
+    meta.skins.owned.push("gold");
+    setNotice(t("skins.unlocked", { name: "黄金炮组" }));
+  }
+  if (meta.hellClears >= 1 && !meta.skins.owned.includes("neon")) {
+    meta.skins.owned.push("neon");
+    setNotice(t("skins.unlocked", { name: "霓虹炮组" }));
+  }
+  // 每周挑战:记录周最佳与首通奖励
+  if (finished.weekly) {
+    const week = weekKey();
+    const weeklyBonus = meta.weekly.cleared ? 0 : 2000;
+    meta.weekly = {
+      week,
+      bestScore: Math.max(meta.weekly.bestScore, finished.stats.damage),
+      cleared: true,
+    };
+    meta.coins += weeklyBonus;
+    if (weeklyBonus > 0) setNotice(t("weekly.bonus", { n: String(weeklyBonus) }));
+  }
   void host.save("meta", meta);
   void host.save("run", null);
   updateHUD();
@@ -762,7 +811,7 @@ function stageVictory(): void {
     daily: false,
     newAchievements: newAch,
     previousRecord: { score: meta.bestScore, tower: meta.bestTower },
-    victory: { stage, difficulty, rewardBonus: bonus },
+    victory: { stage, difficulty, rewardBonus: bonus, weekly: !!finished.weekly },
     onRestart: () => startRun({ stage, difficulty }),
     onNext: () =>
       stage < MAX_STAGE
@@ -1006,7 +1055,15 @@ function showSettings(): void {
   settingsScene({
     settings: meta.settings,
     savedAt: meta.savedAt,
+    skins: { owned: meta.skins.owned, selected: meta.skins.selected },
+    meta: { stageUnlocked: meta.stageUnlocked, hellClears: meta.hellClears },
     themeFollowLabel: t(platform === "miniapp" ? "settings.themeAuto" : "settings.themeAutoSystem"),
+    onSkin: (id) => {
+      meta.skins.selected = id;
+      void host.save("meta", meta);
+      renderer.setSkin(id);
+      setNotice(t("skins.title") + ": " + id);
+    },
     onChange: changeSettings,
     onReset: resetProgress,
     onExport: () => JSON.stringify({ meta, run: run ? snapshotRun(run) : null }),

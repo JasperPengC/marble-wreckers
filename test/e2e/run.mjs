@@ -155,7 +155,7 @@ async function overlayState() {
       "      disabled: button.disabled === true,\n" +
       "    })),\n" +
       "    shopRows: overlay.querySelectorAll('.shop-row, .tile').length,\n" +
-      "    achievements: overlay.querySelectorAll('.ach, .tile--ach').length,\n" +
+      "    achievements: overlay.querySelectorAll('.ach-row, .tile--ach, .ach').length,\n" +
       "    notice: (document.getElementById('notice')?.textContent || '').trim(),\n" +
       "  };\n" +
       "})()"

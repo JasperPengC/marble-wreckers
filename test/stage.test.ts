@@ -14,7 +14,9 @@ import {
   ensureDailyQuests,
   accountPower,
   normalizeMeta,
+  weekKey,
 } from "../src/game/meta.ts";
+import { stageModifier } from "../src/game/stage.ts";
 import { createRun, descendSpeed } from "../src/game/run.ts";
 import { towerSpec } from "../src/game/board.ts";
 import { STAGE_TOWERS as TOWERS } from "../src/game/stage.ts";
@@ -195,5 +197,33 @@ describe("meta v2", () => {
     b.stageUnlocked = 4;
     expect(accountPower(b)).toBeGreaterThan(accountPower(a));
     expect(accountPower(a)).toBe(100);
+  });
+});
+
+describe("stageModifier", () => {
+  test("前 3 关无修改器,第 4 关起轮换", () => {
+    expect(stageModifier(1)).toBeNull();
+    expect(stageModifier(3)).toBeNull();
+    expect(stageModifier(4)?.id).toBe("steel-storm");
+    expect(stageModifier(7)?.id).toBe("pressure");
+    expect(stageModifier(10)?.id).toBe("gold-rush");
+  });
+
+  test("修改器每 3 关轮换,12 关一循环", () => {
+    expect(stageModifier(13)?.id).toBe("brittle"); // (13-4)/3=3 → 第 4 个
+    expect(stageModifier(16)?.id).toBe(stageModifier(4)!.id); // 16 与 4 同相位(差 12)
+  });
+});
+
+describe("meta v2 迁移补充", () => {
+  test("weekly/achievementClaims/skins 旧档迁移", () => {
+    const meta = normalizeMeta({ coins: 10 });
+    expect(meta.weekly.cleared).toBe(false);
+    expect(meta.skins.selected).toBe("classic");
+    expect(meta.achievementClaims).toEqual([]);
+  });
+
+  test("weekKey 格式稳定", () => {
+    expect(weekKey(new Date("2026-01-01"))).toMatch(/^\d{4}-W\d{2}$/);
   });
 });

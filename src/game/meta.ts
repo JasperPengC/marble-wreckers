@@ -141,6 +141,12 @@ export interface MetaSave {
   quests: QuestSave;
   /** 新手引导是否完成(首局三步)。 */
   tutorial: boolean;
+  /** 已领取奖励的成就 id。 */
+  achievementClaims: string[];
+  /** 炮台皮肤:拥有列表与当前选中。 */
+  skins: { owned: string[]; selected: string };
+  /** 每周挑战:周标识与纪录。 */
+  weekly: { week: string; bestScore: number; cleared: boolean };
   /** Highest tower ordinal reached (0-based) in standard mode. */
   bestTower: number;
   bestScore: number;
@@ -164,6 +170,9 @@ export function emptyMeta(): MetaSave {
     lastStage: null,
     quests: emptyQuests(),
     tutorial: false,
+    achievementClaims: [],
+    skins: { owned: ["classic"], selected: "classic" },
+    weekly: { week: "", bestScore: 0, cleared: false },
     bestTower: -1,
     bestScore: 0,
     totalBricks: 0,
@@ -373,6 +382,35 @@ export function normalizeMeta(raw: unknown): MetaSave {
     }
   }
   if (src.tutorial === true) meta.tutorial = true;
+  if (src.skins && typeof src.skins === "object") {
+    const skins = src.skins as Record<string, unknown>;
+    if (Array.isArray(skins.owned)) {
+      const owned = skins.owned.filter(
+        (id): id is string => typeof id === "string" && id.length > 0 && id.length <= 32
+      );
+      if (owned.length > 0) meta.skins.owned = owned;
+    }
+    if (typeof skins.selected === "string" && skins.selected.length <= 32) {
+      meta.skins.selected = skins.selected;
+    }
+    if (!meta.skins.owned.includes("classic")) meta.skins.owned.push("classic");
+    if (!meta.skins.owned.includes(meta.skins.selected)) meta.skins.selected = "classic";
+  }
+  if (src.weekly && typeof src.weekly === "object") {
+    const w = src.weekly as Record<string, unknown>;
+    meta.weekly = {
+      week: typeof w.week === "string" ? w.week.slice(0, 16) : "",
+      bestScore: typeof w.bestScore === "number" && Number.isFinite(w.bestScore) && w.bestScore >= 0 ? Math.floor(w.bestScore) : 0,
+      cleared: w.cleared === true,
+    };
+  }
+  if (Array.isArray(src.achievementClaims)) {
+    for (const id of src.achievementClaims) {
+      if (typeof id === "string" && id.length > 0 && id.length <= 64) {
+        meta.achievementClaims.push(id);
+      }
+    }
+  }
   if (src.quests && typeof src.quests === "object") {
     const q = src.quests as Record<string, unknown>;
     meta.quests.date = typeof q.date === "string" ? q.date.slice(0, 10) : "";
@@ -407,6 +445,8 @@ export interface AchievementDef {
   id: string;
   name: string;
   desc: string;
+  /** 领取奖励(灵石):解锁后可领一次。 */
+  reward: number;
   /** Lifetime meta check (boss kills, totals). */
   meta?: (meta: MetaSave) => boolean;
   /** Per-run check on the run summary. */
@@ -418,66 +458,97 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: "first-tower",
     name: "新手管理员",
     desc: "拆掉第 1 栋楼",
+    reward: 100,
     run: (s) => s.towersCleared >= 1,
   },
   {
     id: "five-towers",
     name: "拆迁办主任",
     desc: "单局拆掉 5 栋楼",
+    reward: 200,
     run: (s) => s.towersCleared >= 5,
   },
   {
     id: "ten-towers",
     name: "真·管理员",
     desc: "单局拆到第 10 栋楼",
+    reward: 400,
     run: (s) => s.towersCleared >= 10,
   },
   {
     id: "boss-kill",
     name: "大楼克星",
     desc: "击杀一次镇站核心",
+    reward: 300,
     run: (s) => s.bossKills >= 1,
   },
   {
     id: "combo-60",
     name: "连环拆迁",
     desc: "单回合连拆 60 块砖",
+    reward: 300,
     run: (s) => s.maxVolleyCombo >= 60,
   },
   {
     id: "score-20k",
     name: "热榜屠夫",
     desc: "单局热度突破 2 万",
+    reward: 400,
     run: (s) => s.damage >= 20_000,
   },
   {
     id: "dot-master",
     name: "毒火焚楼",
     desc: "单局持续伤害累计 2 万",
+    reward: 400,
     run: (s) => s.dotDamage >= 20_000,
   },
   {
     id: "ball-rain",
     name: "弹珠暴雨",
     desc: "单回合发射 18 颗以上弹珠",
+    reward: 250,
     run: (s) => s.launches >= 18,
   },
   {
     id: "daily-player",
     name: "拆迁打卡",
     desc: "完成一局任意模式的拆除",
+    reward: 150,
     run: (s) => s.towersCleared >= 1,
   },
   {
     id: "bricks-1k",
     name: "碎纸机成精",
     desc: "累计拆掉 1000 块砖",
+    reward: 500,
     meta: (m) => m.totalBricks >= 1000,
   },
 ];
 
 export function achievementById(id: string): AchievementDef | undefined {
   return ACHIEVEMENTS.find((a) => a.id === id);
+}
+
+/** ISO 周标识(YYYY-Www),驱动每周挑战种子与记录。 */
+export function weekKey(now = new Date()): string {
+  const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+/** 领取成就奖励:返回灵石数(未解锁/重复领取返回 0)。 */
+export function claimAchievementReward(meta: MetaSave, id: string): number {
+  const def = ACHIEVEMENTS.find((a) => a.id === id);
+  if (!def) return 0;
+  if (!meta.achievements.includes(id)) return 0;
+  if (meta.achievementClaims.includes(id)) return 0;
+  meta.achievementClaims.push(id);
+  meta.coins += def.reward;
+  return def.reward;
 }
 
 /** Evaluate all achievements; returns newly unlocked ids (mutates meta). */

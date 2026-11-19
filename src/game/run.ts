@@ -160,6 +160,8 @@ export interface Run {
   fieldSlowT: number;
   /** 关卡难度;stage 为 null 时也是 null。 */
   difficulty: Difficulty | null;
+  /** 每周挑战局(固定关+地狱,周种子)。 */
+  weekly: boolean;
 }
 
 export function createRun(
@@ -167,7 +169,8 @@ export function createRun(
   shop: Record<string, number>,
   daily: boolean,
   stage: number | null = null,
-  difficulty: Difficulty | null = null
+  difficulty: Difficulty | null = null,
+  weekly: boolean = false
 ): Run {
   const rng = makeRng(seed);
   const mods = baseMods();
@@ -176,6 +179,7 @@ export function createRun(
     daily,
     stage,
     difficulty,
+    weekly,
     skillBlast: 1,
     skillSlow: 1,
     fieldSlowT: 0,
@@ -882,6 +886,7 @@ export function pickRelic(run: Run, id: string): boolean {
 export interface RunSnapshot {
   seed: string;
   daily: boolean;
+  weekly?: boolean;
   /** 主线关卡与难度(v2);旧存档缺省 = 无尽模式。 */
   stage?: number | null;
   difficulty?: Difficulty | null;
@@ -940,6 +945,7 @@ export function snapshotRun(run: Run): RunSnapshot | null {
   return {
     seed: run.seed,
     daily: run.daily,
+    weekly: run.weekly,
     stage: run.stage,
     difficulty: run.difficulty,
     shop: { ...run.shop },
@@ -982,7 +988,8 @@ export function restoreRun(snap: unknown): Run | null {
     s.shop && typeof s.shop === "object" ? (s.shop as Record<string, number>) : {},
     s.daily === true,
     stage,
-    difficulty
+    difficulty,
+    s.weekly === true
   );
   // Rebuild the tower from the snapshot.
   const spec =

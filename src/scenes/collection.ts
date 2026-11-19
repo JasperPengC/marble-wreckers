@@ -1,12 +1,19 @@
 import { ACHIEVEMENTS } from "../game/meta.ts";
-import { h } from "../ui/overlays.ts";
+import { fmtNum, h } from "../ui/overlays.ts";
 import type { SceneShell, Translate } from "./types.ts";
 
 export interface CollectionSceneInput {
   achievements: readonly string[];
+  /** 已领取奖励的成就 id。 */
+  claims: readonly string[];
+  onClaim(id: string): void;
   onBack(): void;
 }
 
+/**
+ * 成就图鉴:未解锁=灰;已解锁未领取=亮+领取按钮;已领取=亮+「已领取」。
+ * 领取按钮直接发灵石。
+ */
 export function showCollectionScene(shell: SceneShell, t: Translate, input: CollectionSceneInput): void {
   shell.open({
     title: t("collection.title"),
@@ -14,14 +21,36 @@ export function showCollectionScene(shell: SceneShell, t: Translate, input: Coll
     body: [
       h(
         "div",
-        { class: "tile-grid tile-grid--ach" },
+        { class: "ach-list" },
         ...ACHIEVEMENTS.map((def) => {
           const has = input.achievements.includes(def.id);
+          const claimed = input.claims.includes(def.id);
+          const claimable = has && !claimed;
           return h(
             "div",
-            { class: "tile tile--ach" + (has ? " tile--unlocked" : "") },
-            h("span", { class: "tile__name" }, (has ? "🏅 " : "🔒 ") + def.name),
-            h("span", { class: "tile__desc" }, def.desc)
+            {
+              class:
+                "ach-row" +
+                (has ? " ach-row--unlocked" : "") +
+                (claimed ? " ach-row--claimed" : ""),
+            },
+            h(
+              "div",
+              { class: "ach-row__text" },
+              h("span", { class: "ach-row__name" }, (has ? "🏅 " : "🔒 ") + def.name),
+              h("span", { class: "ach-row__desc" }, def.desc)
+            ),
+            has
+              ? h(
+                  "button",
+                  {
+                    class: "btn btn--small ach-row__claim",
+                    disabled: !claimable,
+                    onclick: () => input.onClaim(def.id),
+                  },
+                  claimed ? t("quests.claimed") : `${t("quests.claim")} ${fmtNum(def.reward)}`
+                )
+              : null
           );
         })
       ),

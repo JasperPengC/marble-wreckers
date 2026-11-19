@@ -17,8 +17,9 @@ import { fmtNum, h } from "../ui/overlays.ts";
 import type { SceneShell, Translate } from "./types.ts";
 
 export interface StagesSceneInput {
-  meta: Pick<MetaSave, "stages" | "stageUnlocked" | "coins">;
+  meta: Pick<MetaSave, "stages" | "stageUnlocked" | "coins" | "weekly">;
   power: number;
+  onWeekly(): void;
   onStart(stage: number, difficulty: Difficulty): void;
   onBack(): void;
 }
@@ -123,6 +124,32 @@ export function createStagesScene(shell: SceneShell, t: Translate) {
       foot: "",
       body: [
         h("p", { class: "overlay__hint" }, t("stages.hint")),
+        h(
+          "div",
+          {
+            class:
+              "stage-card stage-card--weekly" +
+              (input.meta.weekly.cleared ? " ach-row--claimed" : ""),
+          },
+          h(
+            "div",
+            { class: "stage-card__head" },
+            h("b", { class: "stage-card__no" }, "★"),
+            h("span", { class: "stage-card__mod" }, t("stages.weekly")),
+            h(
+              "span",
+              { class: "stage-card__reward" },
+              input.meta.weekly.cleared
+                ? t("stages.weeklyCleared", { n: fmtNum(input.meta.weekly.bestScore) })
+                : t("stages.weeklyDesc")
+            )
+          ),
+          h(
+            "button",
+            { class: "btn btn--small stage-weekly__go", onclick: () => input.onWeekly() },
+            input.meta.weekly.cleared ? t("weekly.again") : t("stages.weeklyGo")
+          )
+        ),
         h("div", { class: "stage-grid" }, ...cards),
       ],
     });

@@ -75,6 +75,7 @@ export interface FieldView {
 export interface Renderer {
   frame(run: Run | null, fxEvents: FxEvent[], dt: number): void;
   setPalette(palette: ThemePalette): void;
+  setSkin(skin: string): void;
   /** Current playfield mapping, for converting pointer input to game coords. */
   view(): FieldView;
 }
@@ -424,6 +425,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
   let edgeHR = 0;
   let wallLeft: HTMLCanvasElement | null = null;
   let wallRight: HTMLCanvasElement | null = null;
+  /** 炮台皮肤:经典/黄金/霓虹,只影响炮台与角色的点缀色。 */
+  let skinName = "classic";
 
   // Sprite helpers (baked once per device scale).
   let eyeSprite: HTMLCanvasElement | null = null;
@@ -2129,10 +2132,18 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     ctx.drawImage(sprite, x, y, logical, logical);
   }
 
+  /** 炮台皮肤色板:只影响炮身/底座警示条/安全帽/工装的点缀色。 */
+  const SKIN_DEFS: Record<string, { body: [string, string]; stripe: string; helmet: string; vest: string }> = {
+    classic: { body: ["#93a9cc", "#39496b"], stripe: "#ffc13d", helmet: "#ffcf4d", vest: "#ff9d5c" },
+    gold: { body: ["#f2d98c", "#a87512"], stripe: "#fff0b8", helmet: "#ffe9a6", vest: "#d8a83c" },
+    neon: { body: ["#7de3ff", "#1f7fb8"], stripe: "#8affd4", helmet: "#ff8ae0", vest: "#3fd0ff" },
+  };
+
   function drawCannon(run: Run): void {
     const cx = W / 2;
     const cy = CANNON_Y;
     const dark = palette.mode === "dark";
+    const skin = SKIN_DEFS[skinName] ?? SKIN_DEFS.classic;
     const kick = recoil * 5;
     const charging = run.phase === "aim";
     const charge = charging
@@ -2167,7 +2178,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     ctx.save();
     roundRectOn(ctx, cx - 27, cy + 5, 54, 9, 5);
     ctx.clip();
-    ctx.fillStyle = "rgba(255,193,61,0.85)";
+    ctx.fillStyle = skin.stripe;
     ctx.fillRect(cx - 27, cy + 5, 54, 9);
     ctx.fillStyle = "rgba(24,30,44,0.85)";
     for (let x = cx - 27; x < cx + 27; x += 12) {
@@ -2189,8 +2200,8 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     const bob = palette.reducedMotion ? 0 : Math.sin(time * 3.1) * 1.1;
     // 身体(橙色工装)
     ctx.fillStyle = linGrad(ctx, px - 8, 0, px + 8, 0, [
-      [0, dark ? "#d97a3c" : "#ff9d5c"],
-      [1, dark ? "#a3521f" : "#e07a35"],
+      [0, shade(skin.vest, dark ? 0.75 : 1.05)],
+      [1, shade(skin.vest, dark ? 0.5 : 0.85)],
     ]);
     roundRectOn(ctx, px - 8, cy - 14 + bob, 16, 17, 6);
     ctx.fill();
@@ -2213,7 +2224,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     ctx.lineWidth = 2;
     ctx.stroke();
     // 安全帽(黄) + 帽檐
-    ctx.fillStyle = "#ffcf4d";
+    ctx.fillStyle = skin.helmet;
     ctx.beginPath();
     ctx.arc(px, headY - 1.4, 7.6, Math.PI, 0);
     ctx.closePath();
@@ -2222,7 +2233,7 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     ctx.lineWidth = 2;
     ctx.stroke();
     roundRectOn(ctx, px - 9.6, headY - 1.8, 19.2, 3.2, 1.6);
-    ctx.fillStyle = "#ffcf4d";
+    ctx.fillStyle = skin.helmet;
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "rgba(255,255,255,0.55)";
@@ -2257,9 +2268,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
 
     // 炮管:粗短圆润,上亮下暗
     ctx.fillStyle = linGrad(ctx, -9, 0, 9, 0, [
-      [0, dark ? "#5a6d8f" : "#8ca6c9"],
-      [0.3, dark ? "#93a9cc" : "#cfe0f4"],
-      [1, dark ? "#39496b" : "#6482ab"],
+      [0, dark ? shade(skin.body[1], 0.9) : skin.body[0]],
+      [0.3, dark ? shade(skin.body[0], 1.1) : shade(skin.body[0], 1.12)],
+      [1, dark ? skin.body[1] : shade(skin.body[1], 1.15)],
     ]);
     roundRectOn(ctx, -9, -32, 18, 30, 8);
     ctx.fill();
@@ -3254,6 +3265,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     frame,
     setPalette(p) {
       palette = p;
+    },
+    setSkin(skin) {
+      skinName = skin;
     },
     view() {
       // Field origin = world origin + the game-coordinate shift.
