@@ -4,6 +4,7 @@ import messages from "./strings.json";
 import { createHost, type HostMode, type HostSDK } from "./host.ts";
 import { claimBoot, detectBridge, detectPlatform } from "./platform.ts";
 import { createAudioEngine } from "./audio/engine.ts";
+import { createMusicEngine } from "./audio/music.ts";
 import { createRenderer, type ThemePalette } from "./render/draw.ts";
 import { CANNON_Y, H, W } from "./game/const.ts";
 import { dailySeed } from "./game/rng.ts";
@@ -193,6 +194,7 @@ function applyTheme(theme: MiniAppTheme): void {
     screenShake: meta.settings.screenShake,
   };
   audio.setEnabled(meta.settings.sound);
+  music.setEnabled(meta.settings.music);
   renderer.setPalette(palette);
   localize();
 }
@@ -210,9 +212,11 @@ motionQuery?.addEventListener?.("change", () => {
 
 /** 音效挂在 drainFx 的同一批事件上，和渲染器共用一个数据源。 */
 const audio = createAudioEngine(false);
+/** 背景音乐:独立上下文与开关,合成循环小曲;实际开关在 applySettings 里同步。 */
+const music = createMusicEngine(true);
 // 浏览器要求音频在用户手势里启动，否则一直是挂起状态。
 for (const gesture of ["pointerdown", "keydown"] as const) {
-  window.addEventListener(gesture, () => audio.unlock(), { once: true, passive: true });
+  window.addEventListener(gesture, () => { audio.unlock(); music.unlock(); }, { once: true, passive: true });
 }
 
 /** "miniapp" inside the linux.do sandbox, "web" in a plain browser. */
@@ -1086,6 +1090,7 @@ function loop(now: number): void {
 
       // Boss core HP bar + "core broken" callout.
       const core = run.tower.bricks.find((brick) => brick.alive && brick.kind === "core");
+      music.setIntensity(core ? "boss" : "normal");
       const bossBar = element("boss-bar");
       if (core) {
         bossBar.hidden = false;

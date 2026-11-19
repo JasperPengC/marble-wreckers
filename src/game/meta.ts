@@ -89,6 +89,7 @@ export interface PlayerSettings {
   reducedMotion: boolean;
   screenShake: boolean;
   sound: boolean;
+  music: boolean;
   locale: "zh_CN" | "en";
   themeMode: ThemeMode;
 }
@@ -170,6 +171,7 @@ export function emptyMeta(): MetaSave {
       reducedMotion: false,
       screenShake: true,
       sound: true,
+      music: true,
       locale: "zh_CN",
       themeMode: "auto",
     },
@@ -314,6 +316,9 @@ export function normalizeMeta(raw: unknown): MetaSave {
     }
     if (typeof settings.sound === "boolean") {
       meta.settings.sound = settings.sound;
+    }
+    if (typeof settings.music === "boolean") {
+      meta.settings.music = settings.music;
     }
     if (settings.locale === "zh_CN" || settings.locale === "en") {
       meta.settings.locale = settings.locale;

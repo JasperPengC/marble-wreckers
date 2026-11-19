@@ -158,6 +158,8 @@
     "brick.mirror": "折叠",
     "brick.core": "镇站",
     "settings.sound": "音效",
+    "settings.music": "背景音乐",
+    "settings.musicHint": "合成循环小曲,随 Boss 战变奏",
     "settings.soundHint": "撞击、爆破与塌楼音效（现场合成，无音频文件）",
     "relic.title": "选择遗物",
     "relic.meta": "Boss 掉落",

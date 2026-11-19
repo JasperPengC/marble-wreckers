@@ -56,6 +56,9 @@ export function createSettingsScene(shell: SceneShell, t: Translate): (input: Se
     const sound = settingSwitch(input.settings.sound, (next) => {
       input.onChange({ sound: next });
     });
+    const music = settingSwitch(input.settings.music !== false, (next) => {
+      input.onChange({ music: next });
+    });
     const themeSel = h(
       "div",
       { class: "seg" },
@@ -124,6 +127,7 @@ export function createSettingsScene(shell: SceneShell, t: Translate): (input: Se
           settingRow(t("settings.shake"), t("settings.shakeHint"), shake),
           settingRow(t("settings.motion"), t("settings.motionHint"), motion),
           settingRow(t("settings.sound"), t("settings.soundHint"), sound),
+      settingRow(t("settings.music"), t("settings.musicHint"), music),
           settingRow(t("settings.theme"), t("settings.themeHint"), themeSel),
           settingRow(t("settings.locale"), "", locale)
         ),
