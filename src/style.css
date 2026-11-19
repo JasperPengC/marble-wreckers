@@ -6106,27 +6106,31 @@ body,
   display: flex;
   align-items: stretch;
   gap: 2px;
-  width: min(480px, 100%);
-  padding: 6px calc(6px + var(--safe-area-right)) calc(6px + var(--safe-area-bottom))
-    calc(6px + var(--safe-area-left));
-  border-top: 1px solid var(--panel-border);
-  border-radius: 16px 16px 0 0;
-  background: var(--panel-strong-2);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+  width: min(440px, 100%);
+  padding: 10px calc(8px + var(--safe-area-right)) calc(10px + var(--safe-area-bottom))
+    calc(8px + var(--safe-area-left));
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px 20px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 40%),
+    var(--panel-strong-2);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 -12px 36px rgba(0, 0, 0, 0.5);
 }
 
 .dock__item {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 52px;
+  min-height: 58px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 4px 2px;
+  gap: 5px;
+  padding: 5px 2px;
   border: 0;
   border-radius: 10px;
   background: none;
@@ -6136,29 +6140,35 @@ body,
 }
 
 .dock__item:active {
-  transform: scale(0.94);
+  transform: scale(0.92) translateY(2px);
   background: rgba(255, 255, 255, 0.06);
 }
 
-.dock__item .menu-item__medal {
-  width: 30px;
-  height: 30px;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  color: var(--accent);
-}
+  .dock__item .menu-item__medal {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.25) 75%);
+    box-shadow:
+      inset 0 1.5px 3px rgba(0, 0, 0, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+    color: var(--accent);
+  }
 
 .dock__item .menu-item__medal svg {
-  width: 21px;
-  height: 21px;
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.3;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
 }
 
 .dock__item .menu-item__label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  opacity: 0.78;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
 }
 
@@ -7147,3 +7157,48 @@ body,
 .hud-chip--tower.chip-hidden {
   display: none;
 }
+
+/* Dock 各项独立点缀色:打破金色单调,向原生手游靠拢 */
+.dock__item--tower .menu-item__medal { color: #8ecbff; }
+.dock__item--daily .menu-item__medal { color: #8ef0a8; }
+.dock__item--shop .menu-item__medal { color: #ffd24d; }
+.dock__item--quests .menu-item__medal { color: #6ad4ff; }
+.dock__item--collection .menu-item__medal { color: #d6a6ff; }
+.dock__item--skills .menu-item__medal { color: #ff9de0; }
+
+:root[data-theme="light"] .dock__item--tower .menu-item__medal { color: #3a7cc0; }
+:root[data-theme="light"] .dock__item--daily .menu-item__medal { color: #2a8a3e; }
+:root[data-theme="light"] .dock__item--shop .menu-item__medal { color: #a87412; }
+:root[data-theme="light"] .dock__item--quests .menu-item__medal { color: #1d7fae; }
+:root[data-theme="light"] .dock__item--collection .menu-item__medal { color: #8b3cb8; }
+:root[data-theme="light"] .dock__item--skills .menu-item__medal { color: #c23a8a; }
+
+/* Dock 各项独立点缀色:打破金色单调,向原生手游靠拢 */
+.dock__item--tower .menu-item__medal { color: #8ecbff; }
+.dock__item--daily .menu-item__medal { color: #8ef0a8; }
+.dock__item--shop .menu-item__medal { color: #ffd24d; }
+.dock__item--quests .menu-item__medal { color: #6ad4ff; }
+.dock__item--collection .menu-item__medal { color: #d6a6ff; }
+.dock__item--skills .menu-item__medal { color: #ff9de0; }
+
+:root[data-theme="light"] .dock__item--tower .menu-item__medal { color: #3a7cc0; }
+:root[data-theme="light"] .dock__item--daily .menu-item__medal { color: #2a8a3e; }
+:root[data-theme="light"] .dock__item--shop .menu-item__medal { color: #a87412; }
+:root[data-theme="light"] .dock__item--quests .menu-item__medal { color: #1d7fae; }
+:root[data-theme="light"] .dock__item--collection .menu-item__medal { color: #8b3cb8; }
+:root[data-theme="light"] .dock__item--skills .menu-item__medal { color: #c23a8a; }
+
+/* Dock 各项独立点缀色:打破金色单调,向原生手游靠拢 */
+.dock__item--tower .menu-item__medal { color: #8ecbff; }
+.dock__item--daily .menu-item__medal { color: #8ef0a8; }
+.dock__item--shop .menu-item__medal { color: #ffd24d; }
+.dock__item--quests .menu-item__medal { color: #6ad4ff; }
+.dock__item--collection .menu-item__medal { color: #d6a6ff; }
+.dock__item--skills .menu-item__medal { color: #ff9de0; }
+
+:root[data-theme="light"] .dock__item--tower .menu-item__medal { color: #3a7cc0; }
+:root[data-theme="light"] .dock__item--daily .menu-item__medal { color: #2a8a3e; }
+:root[data-theme="light"] .dock__item--shop .menu-item__medal { color: #a87412; }
+:root[data-theme="light"] .dock__item--quests .menu-item__medal { color: #1d7fae; }
+:root[data-theme="light"] .dock__item--collection .menu-item__medal { color: #8b3cb8; }
+:root[data-theme="light"] .dock__item--skills .menu-item__medal { color: #c23a8a; }

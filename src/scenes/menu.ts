@@ -48,10 +48,10 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
       h("span", { class: "records__label" }, label),
       h("b", {}, value)
     );
-  const dockItem = (label: string, iconName: string, onclick: () => void) =>
+  const dockItem = (label: string, iconName: string, accent: string, onclick: () => void) =>
     h(
       "button",
-      { class: "menu-item dock__item", onclick },
+      { class: `menu-item dock__item dock__item--${accent}`, onclick },
       h("span", { class: "menu-item__medal" }, icon(iconName)),
       h("span", { class: "menu-item__label" }, label)
     );
@@ -91,12 +91,12 @@ export function showMenuScene(overlay: OverlayManager, t: Translate, input: Menu
     h(
       "nav",
       { class: "dock" },
-      dockItem(t("menu.stagesShort"), "tower", () => input.onStages()),
-      dockItem(t("menu.dailyDock"), "calendar", () => input.onDaily()),
-      dockItem(t("menu.shopDock"), "shop", () => input.onShop()),
-      dockItem(t("menu.questsShort"), "gem", () => input.onQuests()),
-      dockItem(t("menu.collectionDock"), "book", () => input.onCollection()),
-      dockItem(t("menu.skillsDock"), "critPower", () => input.onSkills())
+      dockItem(t("menu.stagesShort"), "tower", "tower", () => input.onStages()),
+      dockItem(t("menu.dailyDock"), "calendar", "daily", () => input.onDaily()),
+      dockItem(t("menu.shopDock"), "shop", "shop", () => input.onShop()),
+      dockItem(t("menu.questsShort"), "gem", "quests", () => input.onQuests()),
+      dockItem(t("menu.collectionDock"), "book", "collection", () => input.onCollection()),
+      dockItem(t("menu.skillsDock"), "critPower", "skills", () => input.onSkills())
     ),
   ];
   overlay.root.append(...children.filter((node): node is Node => node !== null));
