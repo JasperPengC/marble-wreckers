@@ -1474,6 +1474,8 @@ function hydrateIcons(): void {
     node.replaceChildren(icon(node.dataset.icon ?? "help"));
   });
   for (const [idName, iconName, label] of [
+    ["hud-help", "help", t("menu.help")],
+    ["hud-settings", "gear", t("menu.settings")],
     ["pause", "pause", t("pause.button")],
     ["build-fab", "critPower", t("build.title")],
     ["skill-blast", "impact", t("skills.blast")],

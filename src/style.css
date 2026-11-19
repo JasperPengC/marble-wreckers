@@ -102,7 +102,7 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   padding: calc(var(--safe-area-top) + 10px) calc(var(--safe-area-right) + 10px) 0
     calc(var(--safe-area-left) + 10px);
   pointer-events: none;
@@ -7128,4 +7128,22 @@ body,
 /* 主页(标题浮层)时:设置钮保持可见(由 JS 控制 hidden 的兜底) */
 .overlay--title ~ .hud-top .fab--settings {
   visibility: visible;
+}
+
+/* 存档指示灯:改绝对定位挂在右上角,不占徽章行空间 */
+.save-led {
+  position: absolute;
+  top: calc(var(--safe-area-top) + 20px);
+  right: calc(var(--safe-area-right) + 14px);
+  z-index: 10;
+  pointer-events: none;
+}
+
+:root[data-theme="light"] .save-led {
+  right: calc(var(--safe-area-right) + 14px);
+}
+
+/* 关卡制下楼栋徽章由信息牌代替 */
+.hud-chip--tower.chip-hidden {
+  display: none;
 }

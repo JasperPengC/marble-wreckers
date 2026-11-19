@@ -47,6 +47,9 @@ export function createHudView(opts: HudOptions): HudView {
     opts.el("hud-coins").textContent = fmtNum(readout.coins);
     opts.el("hud-tower").textContent = readout.stage != null ? String(readout.stage) : readout.tower;
     opts.el("hud-power").textContent = fmtNum(readout.power);
+    // 关卡制下信息牌已显示「第 X 关」,楼栋徽章冗余 → 隐藏,腾出单行空间
+    const towerChip = document.querySelector(".hud-chip--tower");
+    if (towerChip) towerChip.classList.toggle("chip-hidden", model.inRun && readout.stage != null);
     updateStagePlate(model);
 
     const shield = opts.el("hud-shield");

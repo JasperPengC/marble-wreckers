@@ -1001,6 +1001,9 @@ async function testPerformance(ctx) {
         "})()"
     );
     await ev("window.__boost(12, 0)");
+    // 预热一发:首次开火含音效调度/粒子池初始化的一次性开销,不计入采样
+    await ev("window.__fire(0.8)");
+    await sleep(2500);
     const mobileProbe = await ev(
       "new Promise((resolve) => {\n" +
         "  const round = (value) => Math.round(value * 100) / 100;\n" +
