@@ -1,0 +1,52 @@
+# 发版:推 v* tag 时构建产物并发布 GitHub Release。
+#
+# 触发纪律:仅 v* tag 推送,不挂在任何分支 push 上,避免多余 CI。
+# 产物:H5 站点 zip + linux.do 快应用包 zip。
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: 安装依赖(锁定 lockfile)
+        run: bun install --frozen-lockfile
+
+      - name: 门禁(typecheck + arch + 单测)
+        run: bun run typecheck && bun run arch && bun test test
+
+      - name: 构建 H5 与快应用包
+        run: bun run build:h5 && bun run build:miniapp
+
+      - name: 打包附件
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          (cd dist/web && zip -qr "$OLDPWD/marble-wreckers-h5-v${VERSION}.zip" .)
+          cp dist/package/app.zip "marble-wreckers-miniapp-v${VERSION}.zip"
+          ls -la marble-wreckers-*.zip
+
+      - name: 发布 GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "弹珠拆迁队 ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            marble-wreckers-h5-v*.zip \
+            marble-wreckers-miniapp-v*.zip

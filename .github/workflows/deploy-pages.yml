@@ -1,0 +1,59 @@
+# 部署 GitHub Pages:构建独立 H5 版(dist/web)并发布到 https://jasperpengc.github.io/marble-wreckers/
+#
+# 触发纪律:仅 push 到 main + 手动按钮;其余分支/PR 一律不触发。
+# concurrency 去重:同组已有任务时取消旧的,连续 push 也绝不重复部署。
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          # 锁死与本地一致的版本,保证 CI 与本地行为可复现
+          bun-version: 1.4.4
+
+      - name: 安装依赖(锁定 lockfile)
+        run: bun install --frozen-lockfile
+
+      # 门禁:类型 + 架构约束 + 单元测试(不依赖浏览器,CI 上确定性 100%;
+      # 浏览器 e2e 在本地对构建产物跑,见 scripts/smoke-static.mjs)
+      - name: 门禁(typecheck + arch + 单测)
+        run: bun run typecheck && bun run arch && bun test test
+
+      - name: 构建 H5
+        run: bun run build:h5
+
+      - name: 校验产物完整
+        run: |
+          test -f dist/web/index.html
+          test -f dist/web/app.js
+          test -f dist/web/app.css
+          ! grep -qE 'src="/|href="/' dist/web/index.html
+
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
