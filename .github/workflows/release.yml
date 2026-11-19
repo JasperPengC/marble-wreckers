@@ -38,8 +38,10 @@ jobs:
       - name: 门禁(typecheck + arch + 单测)
         run: bun run typecheck && bun run arch && bun test test
 
+      # 规范完整构建(vite 构建 → 生成 index.html → 打快应用包)。
+      # 注意不能拼 build:h5+build:miniapp:后者会清空重建 dist/web,抹掉 index.html。
       - name: 构建 H5 与快应用包
-        run: bun run build:h5 && bun run build:miniapp
+        run: bun run build
 
       - name: 产物完整性校验
         run: |
