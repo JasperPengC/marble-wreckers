@@ -6965,16 +6965,25 @@ body,
    v16 — 选中态看得清 + Dock 去色块
    ========================================================================= */
 
-/* 分类选中:金色实底,一眼可辨(压过所有旧皮肤覆盖) */
+/* 分类选中:金色实底 + 超大超粗深色字,对比拉满 */
 .tabs .tab--on {
   background: linear-gradient(180deg, #ffe9a8, #e9bb3c) !important;
-  color: #241a05 !important;
+  color: #1a1005 !important;
   border-color: #8f6a1c !important;
   text-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-stroke: none !important;
+  -webkit-text-stroke: 0 !important;
+  filter: none !important;
+  opacity: 1 !important;
 }
 
 .tabs .tab {
   color: rgba(232, 230, 227, 0.55) !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
 }
 
 :root[data-theme="light"] .tabs .tab--on {
@@ -7221,4 +7230,124 @@ body,
   border-radius: 1px;
   background: linear-gradient(90deg, transparent, rgba(224, 182, 76, 0.3), transparent);
   pointer-events: none;
+}
+
+/* 任务行/成就行:游戏石板面板,和商店 tile 同一视觉语言 */
+.quest-row,
+.ach-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid rgba(110, 128, 158, 0.45);
+  border-bottom-color: rgba(0, 0, 0, 0.85);
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), transparent 42%),
+    linear-gradient(180deg, #202a3b, #0e1420);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.quest-row--done,
+.ach-row--claimable {
+  border: 1px solid rgba(224, 182, 76, 0.5);
+  background:
+    linear-gradient(180deg, rgba(224, 182, 76, 0.08), transparent 42%),
+    linear-gradient(180deg, #253048, #101828);
+}
+
+.quest-row--claimed,
+.ach-row--claimed {
+  opacity: 0.55;
+}
+
+.quest-row__name,
+.ach-row__name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.quest-row__desc,
+.ach-row__desc {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.quest-row__track {
+  width: 88px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.quest-row__fill {
+  background: linear-gradient(180deg, #ffd977, #e0a830);
+  box-shadow: 0 0 6px rgba(224, 182, 76, 0.4);
+}
+
+.quest-row__claim,
+.ach-row__claim {
+  border-radius: 0;
+  border: 1px solid rgba(224, 182, 76, 0.4);
+  background: linear-gradient(180deg, #3a4a60, #1a2436);
+  color: var(--accent);
+  font-weight: 800;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.quest-row__claim:disabled,
+.ach-row__claim:disabled {
+  border-color: rgba(110, 128, 158, 0.3);
+  background: linear-gradient(180deg, #1a2232, #0e1420);
+  color: rgba(232, 230, 227, 0.35);
+}
+
+.ach-row__medal {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 35%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.5) 80%);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.ach-row__medal--on {
+  background: radial-gradient(circle at 50% 35%, rgba(224, 182, 76, 0.2), rgba(224, 182, 76, 0.05) 80%);
+  color: var(--accent);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 8px rgba(224, 182, 76, 0.25);
+}
+
+.ach-row__medal svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
+}
+
+:root[data-theme="light"] .quest-row,
+:root[data-theme="light"] .ach-row {
+  border: 1px solid rgba(120, 100, 60, 0.3);
+  border-bottom-color: rgba(60, 50, 30, 0.4);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 42%),
+    linear-gradient(180deg, #f4f2ec, #e8e4da);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 4px rgba(60, 50, 30, 0.12);
+}
+
+:root[data-theme="light"] .quest-row--done,
+:root[data-theme="light"] .ach-row--claimable {
+  border: 1px solid rgba(168, 116, 18, 0.4);
+  background:
+    linear-gradient(180deg, rgba(255, 232, 180, 0.3), transparent 42%),
+    linear-gradient(180deg, #f8f5ee, #ede8dc);
 }
