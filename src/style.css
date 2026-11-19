@@ -6164,11 +6164,11 @@ body,
 }
 
 .dock__item .menu-item__label {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--primary);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(232, 230, 227, 0.7);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
 }
 
@@ -7158,47 +7158,5 @@ body,
   display: none;
 }
 
-/* Dock 各项独立点缀色:打破金色单调,向原生手游靠拢 */
-.dock__item--tower .menu-item__medal { color: #8ecbff; }
-.dock__item--daily .menu-item__medal { color: #8ef0a8; }
-.dock__item--shop .menu-item__medal { color: #ffd24d; }
-.dock__item--quests .menu-item__medal { color: #6ad4ff; }
-.dock__item--collection .menu-item__medal { color: #d6a6ff; }
-.dock__item--skills .menu-item__medal { color: #ff9de0; }
 
-:root[data-theme="light"] .dock__item--tower .menu-item__medal { color: #3a7cc0; }
-:root[data-theme="light"] .dock__item--daily .menu-item__medal { color: #2a8a3e; }
-:root[data-theme="light"] .dock__item--shop .menu-item__medal { color: #a87412; }
-:root[data-theme="light"] .dock__item--quests .menu-item__medal { color: #1d7fae; }
-:root[data-theme="light"] .dock__item--collection .menu-item__medal { color: #8b3cb8; }
-:root[data-theme="light"] .dock__item--skills .menu-item__medal { color: #c23a8a; }
 
-/* Dock 各项独立点缀色:打破金色单调,向原生手游靠拢 */
-.dock__item--tower .menu-item__medal { color: #8ecbff; }
-.dock__item--daily .menu-item__medal { color: #8ef0a8; }
-.dock__item--shop .menu-item__medal { color: #ffd24d; }
-.dock__item--quests .menu-item__medal { color: #6ad4ff; }
-.dock__item--collection .menu-item__medal { color: #d6a6ff; }
-.dock__item--skills .menu-item__medal { color: #ff9de0; }
-
-:root[data-theme="light"] .dock__item--tower .menu-item__medal { color: #3a7cc0; }
-:root[data-theme="light"] .dock__item--daily .menu-item__medal { color: #2a8a3e; }
-:root[data-theme="light"] .dock__item--shop .menu-item__medal { color: #a87412; }
-:root[data-theme="light"] .dock__item--quests .menu-item__medal { color: #1d7fae; }
-:root[data-theme="light"] .dock__item--collection .menu-item__medal { color: #8b3cb8; }
-:root[data-theme="light"] .dock__item--skills .menu-item__medal { color: #c23a8a; }
-
-/* Dock 各项独立点缀色:打破金色单调,向原生手游靠拢 */
-.dock__item--tower .menu-item__medal { color: #8ecbff; }
-.dock__item--daily .menu-item__medal { color: #8ef0a8; }
-.dock__item--shop .menu-item__medal { color: #ffd24d; }
-.dock__item--quests .menu-item__medal { color: #6ad4ff; }
-.dock__item--collection .menu-item__medal { color: #d6a6ff; }
-.dock__item--skills .menu-item__medal { color: #ff9de0; }
-
-:root[data-theme="light"] .dock__item--tower .menu-item__medal { color: #3a7cc0; }
-:root[data-theme="light"] .dock__item--daily .menu-item__medal { color: #2a8a3e; }
-:root[data-theme="light"] .dock__item--shop .menu-item__medal { color: #a87412; }
-:root[data-theme="light"] .dock__item--quests .menu-item__medal { color: #1d7fae; }
-:root[data-theme="light"] .dock__item--collection .menu-item__medal { color: #8b3cb8; }
-:root[data-theme="light"] .dock__item--skills .menu-item__medal { color: #c23a8a; }
