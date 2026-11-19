@@ -32,6 +32,29 @@ function questRow(
 ): HTMLElement {
   const done = progress >= def.goal;
   const ratio = Math.max(0, Math.min(1, progress / def.goal));
+  // 右侧状态区只留一件东西:进行中=进度条,可领=领奖按钮,已领=徽标。
+  const side = claimed
+    ? h("span", { class: "quest-row__badge" }, t("quests.claimed"))
+    : done
+      ? h(
+          "button",
+          { class: "btn btn--small quest-row__claim", onclick: onClaim },
+          `${t("quests.claim")} +${def.reward}`
+        )
+      : h(
+          "div",
+          { class: "quest-row__progress-box" },
+          h(
+            "div",
+            { class: "quest-row__track" },
+            h("b", { class: "quest-row__fill", style: `width:${(ratio * 100).toFixed(1)}%` })
+          ),
+          h(
+            "span",
+            { class: "quest-row__progress" },
+            `${fmtNum(Math.min(progress, def.goal))}/${fmtNum(def.goal)}`
+          )
+        );
   return h(
     "div",
     { class: "quest-row" + (claimed ? " quest-row--claimed" : done ? " quest-row--done" : "") },
@@ -41,29 +64,7 @@ function questRow(
       h("div", { class: "quest-row__name" }, def.name),
       h("div", { class: "quest-row__desc" }, def.desc)
     ),
-    h(
-      "div",
-      { class: "quest-row__side" },
-      h(
-        "div",
-        { class: "quest-row__track" },
-        h("b", { class: "quest-row__fill", style: `width:${(ratio * 100).toFixed(1)}%` })
-      ),
-      h(
-        "div",
-        { class: "quest-row__meta" },
-        h("span", { class: "quest-row__progress" }, `${fmtNum(Math.min(progress, def.goal))}/${fmtNum(def.goal)}`),
-        h(
-          "button",
-          {
-            class: "btn btn--small quest-row__claim",
-            disabled: !done || claimed,
-            onclick: onClaim,
-          },
-          claimed ? t("quests.claimed") : `${t("quests.claim")} ${def.reward}`
-        )
-      )
-    )
+    h("div", { class: "quest-row__side" }, side)
   );
 }
 

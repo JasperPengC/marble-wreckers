@@ -6527,9 +6527,17 @@ body,
   gap: 5px;
 }
 
+.quest-row__progress-box {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 108px;
+}
+
 .quest-row__track {
-  width: 92px;
-  height: 6px;
+  width: 100%;
+  height: 7px;
   border-radius: 999px;
   background: rgba(128, 140, 160, 0.28);
   overflow: hidden;
@@ -6542,27 +6550,32 @@ body,
   background: var(--accent);
 }
 
-.quest-row__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .quest-row__progress {
   font-size: 10px;
   font-variant-numeric: tabular-nums;
   opacity: 0.7;
+  text-align: right;
 }
 
 .quest-row__claim {
-  min-height: 30px;
-  padding: 4px 12px;
-  font-size: 11px;
+  min-height: 34px;
+  padding: 5px 16px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
-.quest-row__claim:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.quest-row__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(232, 230, 227, 0.5);
+  border: 1px solid rgba(110, 128, 158, 0.3);
+  border-radius: 10px;
+  background: rgba(14, 20, 32, 0.5);
+  white-space: nowrap;
 }
 
 .quest-milestone {
@@ -6935,9 +6948,10 @@ body,
 }
 
 .ach-row__claim {
-  min-height: 30px;
-  padding: 4px 12px;
-  font-size: 11px;
+  min-height: 32px;
+  padding: 4px 14px;
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 
 .ach-row__claim:disabled {
@@ -7293,8 +7307,8 @@ body,
 }
 
 .quest-row__track {
-  width: 88px;
-  height: 5px;
+  width: 100%;
+  height: 6px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.6);
   overflow: hidden;
@@ -7306,21 +7320,42 @@ body,
   box-shadow: 0 0 6px rgba(224, 182, 76, 0.4);
 }
 
-.quest-row__claim,
-.ach-row__claim {
+.quest-row__claim {
   border-radius: 0;
-  border: 1px solid rgba(224, 182, 76, 0.4);
-  background: linear-gradient(180deg, #3a4a60, #1a2436);
-  color: var(--accent);
-  font-weight: 800;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(224, 182, 76, 0.55);
+  background: linear-gradient(180deg, #ffd977, #e0a830);
+  color: #221a08;
+  font-weight: 900;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45), 0 0 10px rgba(224, 182, 76, 0.3);
 }
 
-.quest-row__claim:disabled,
+.quest-row__claim:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* 成就按钮:可领=同款金字,已领=置灰锁死 */
+.ach-row__claim {
+  border-radius: 0;
+  border: 1px solid rgba(224, 182, 76, 0.55);
+  background: linear-gradient(180deg, #ffd977, #e0a830);
+  color: #221a08;
+  font-weight: 900;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.45), 0 0 10px rgba(224, 182, 76, 0.3);
+}
+
 .ach-row__claim:disabled {
   border-color: rgba(110, 128, 158, 0.3);
   background: linear-gradient(180deg, #1a2232, #0e1420);
   color: rgba(232, 230, 227, 0.35);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.quest-row__badge {
+  color: rgba(232, 230, 227, 0.45);
+  border: 1px solid rgba(110, 128, 158, 0.3);
+  background: rgba(14, 20, 32, 0.5);
+  border-radius: 0;
 }
 
 .ach-row__medal {
