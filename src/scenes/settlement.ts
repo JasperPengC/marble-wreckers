@@ -62,6 +62,20 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
       towerIndex > prevRecord.tower);
   const victory = input.victory ?? null;
   const failure = input.failure ?? null;
+  const countUp = (el: HTMLElement, target: number): void => {
+    const reduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || target <= 0) return;
+    const started = performance.now();
+    const duration = 850;
+    const tick = (now: number): void => {
+      const t = Math.min(1, (now - started) / duration);
+      el.textContent = fmtNum(Math.round(target * (1 - Math.pow(1 - t, 3))));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
   shell.open({
     title: victory
       ? t("victory.title", { stage: String(victory.stage) })
@@ -162,4 +176,13 @@ export function showSettlementScene(shell: SceneShell, t: Translate, input: Sett
       ),
     ],
   });
+  // 通关结算:核心数字滚动演出(尊重减少动效)
+  const reduced = document.documentElement.dataset.theme !== undefined;
+  if (victory) {
+    const heat = [...document.querySelectorAll("#overlay .overlay__stat")].find((stat) =>
+      (stat.textContent || "").includes(t("death.score"))
+    );
+    const strong = heat?.querySelector("strong");
+    if (strong) countUp(strong, stats.damage);
+  }
 }

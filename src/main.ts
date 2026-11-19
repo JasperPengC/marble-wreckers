@@ -5,6 +5,7 @@ import { createHost, type HostMode, type HostSDK } from "./host.ts";
 import { claimBoot, detectBridge, detectPlatform } from "./platform.ts";
 import { createAudioEngine } from "./audio/engine.ts";
 import { createMusicEngine } from "./audio/music.ts";
+import { createTutorial, TOWER_CLEARED_EVENT, type TutorialHandle } from "./ui/tutorial.ts";
 import { createRenderer, type ThemePalette } from "./render/draw.ts";
 import { CANNON_Y, H, W } from "./game/const.ts";
 import { dailySeed } from "./game/rng.ts";
@@ -60,10 +61,12 @@ import {
   MAX_STAGE,
   STAGE_TOWERS,
   stageClearReward,
+  stageModifier,
   type Difficulty,
 } from "./game/stage.ts";
 import { createHudView } from "./ui/hud-view.ts";
 import { buildHudModel } from "./ui/hud-model.ts";
+import { activateBlastSkill, activateSlowSkill } from "./game/run.ts";
 import { bossProgress, towerBottomY } from "./game/board.ts";
 import { relicById } from "./game/relics.ts";
 
@@ -91,6 +94,10 @@ type TemplateElements = {
   "boss-fill": HTMLElement;
   "build-fab": HTMLButtonElement;
   "build-fab-badge": HTMLElement;
+  "skill-blast": HTMLButtonElement;
+  "skill-blast-badge": HTMLElement;
+  "skill-slow": HTMLButtonElement;
+  "skill-slow-badge": HTMLElement;
   "build-list": HTMLElement;
   "side-tower": HTMLElement;
   "side-legend": HTMLElement;
@@ -351,19 +358,38 @@ function announceTower(): void {
   const spec = run.tower.spec;
   const stagePrefix = run.stage != null ? `第 ${run.stage} 关 · ` : "";
   const diffName = run.difficulty ? t(`stage.${run.difficulty}`) : "";
+  const mod = run.stage != null ? stageModifier(run.stage) : null;
   const stageTag = run.stage != null ? `第 ${run.stage} 关 · ${diffName} · ` : "";
+  const modTag = mod ? `${mod.name} · ${mod.desc}` : "";
   if (spec.isBoss) {
     showBanner("⚠ 镇站巨楼来袭!", stageTag + "打穿护甲 · 捣毁核心", "danger");
   } else {
-    showBanner(stageTag + "第 " + (run.stats.towersCleared + 1) + " 栋", "清空整栋楼 · 抽一次强化");
+    showBanner(
+      stageTag + "第 " + (run.stats.towersCleared + 1) + " 栋",
+      modTag || "清空整栋楼 · 抽一次强化"
+    );
   }
 }
 
 function updateHUD(): void {
   hud.updateHUD(buildHudModel(run, meta, t));
+  updateSkillButtons();
   // 楼栋徽章的悬浮提示随局内/局外切换（图标化徽章没有文字标签）。
   const towerChip = document.querySelector<HTMLElement>(".hud-chip--tower");
   if (towerChip) towerChip.title = t(run ? "hud.towerNow" : "hud.towerBest");
+}
+
+/** 主动技能钮:充能数与可用态。 */
+function updateSkillButtons(): void {
+  const blast = element("skill-blast") as HTMLButtonElement;
+  const slow = element("skill-slow") as HTMLButtonElement;
+  const inRun = !!run && (run.phase === "aim" || run.phase === "volley");
+  blast.hidden = !inRun;
+  slow.hidden = !inRun;
+  blast.disabled = !inRun || run!.skillBlast <= 0;
+  slow.disabled = !inRun || run!.skillSlow <= 0;
+  element("skill-blast-badge").textContent = String(run?.skillBlast ?? 0);
+  element("skill-slow-badge").textContent = String(run?.skillSlow ?? 0);
 }
 
 function updateBuild(): void {
@@ -410,6 +436,31 @@ function showMenu(): void {
     onSettings: showSettings,
   });
   updateHUD();
+}
+
+// ------------------------------------------------------------- 新手引导
+
+let tutorialHandle: TutorialHandle | null = null;
+let tutorialClearedSeen = 0;
+
+function startTutorialIfFirstRun(
+  stage: number | null,
+  difficulty: Difficulty | null,
+  isDaily: boolean,
+): void {
+  tutorialClearedSeen = run?.stats.towersCleared ?? 0;
+  if (meta.tutorial || isDaily || stage !== 1 || difficulty !== "easy") return;
+  if (!run) return;
+  tutorialHandle?.dispose();
+  tutorialHandle = createTutorial(document.getElementById("app")!, {
+    steps: [t("tutorial.aim"), t("tutorial.fire"), t("tutorial.clear")],
+    skipLabel: t("tutorial.skip"),
+    onFinish: () => {
+      meta.tutorial = true;
+      tutorialHandle = null;
+      void host.save("meta", meta);
+    },
+  });
 }
 
 // ------------------------------------------------------------- 选关 / 任务
@@ -478,6 +529,7 @@ function startRun(
   updateHUD();
   updateBuild();
   announceTower();
+  startTutorialIfFirstRun(stage, difficulty, daily);
   persistAll(true);
 }
 
@@ -795,6 +847,19 @@ element("build-fab").addEventListener("click", () => {
   showBuild();
 });
 
+element("skill-blast").addEventListener("click", () => {
+  if (run && activateBlastSkill(run)) {
+    updateHUD();
+    audio.play([{ type: "blast", x: W / 2, y: CANNON_Y, radius: 130 } as never]);
+  }
+});
+
+element("skill-slow").addEventListener("click", () => {
+  if (run && activateSlowSkill(run)) {
+    updateHUD();
+  }
+});
+
 /**
  * Leave a read-only info screen (help / skill detail) and restore whatever was
  * underneath. A draft never pauses the run, so resume() alone would be a no-op
@@ -1078,6 +1143,10 @@ function loop(now: number): void {
       if (keys.left) aimRun(run, run.aimAngle - 1.4 * dt);
       if (keys.right) aimRun(run, run.aimAngle + 1.4 * dt);
       updateRun(run, dt);
+      if (tutorialHandle && run.stats.towersCleared > tutorialClearedSeen) {
+        tutorialClearedSeen = run.stats.towersCleared;
+        window.dispatchEvent(new Event(TOWER_CLEARED_EVENT));
+      }
       const fx = drainFx(run);
       renderer.frame(run, fx, dt);
       audio.play(fx);
@@ -1338,6 +1407,8 @@ function hydrateIcons(): void {
   for (const [idName, iconName, label] of [
     ["pause", "pause", t("pause.button")],
     ["build-fab", "critPower", t("build.title")],
+    ["skill-blast", "bomb", t("skills.blast")],
+    ["skill-slow", "speed", t("skills.slow")],
   ] as const) {
     const button = document.getElementById(idName);
     if (!button) continue;

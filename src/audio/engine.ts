@@ -23,6 +23,8 @@ export interface AudioEngine {
   /** 静音开关。关闭时立刻收声。 */
   setEnabled(enabled: boolean): void;
   isEnabled(): boolean;
+  /** 胜利小调:通关结算时来一段上行琶音。 */
+  jingle(): void;
   /** 首次用户交互时调用，创建/恢复音频上下文。 */
   unlock(): void;
   /** 诊断用：已发声数量 / 上下文状态。 */
@@ -215,6 +217,25 @@ export function createAudioEngine(initialEnabled = true): AudioEngine {
       }
     },
     isEnabled: () => enabled,
+    jingle() {
+      const rig = ensure();
+      if (!rig) return;
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((freq, index) => {
+        const delay = index * 0.09;
+        const osc = rig.ctx.createOscillator();
+        const gain = rig.ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq, rig.ctx.currentTime + delay);
+        gain.gain.setValueAtTime(0.0001, rig.ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.3, rig.ctx.currentTime + delay + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, rig.ctx.currentTime + delay + 0.3);
+        osc.connect(gain).connect(rig.master);
+        osc.start(rig.ctx.currentTime + delay);
+        osc.stop(rig.ctx.currentTime + delay + 0.35);
+        played += 1;
+      });
+    },
     unlock() {
       ensure();
     },

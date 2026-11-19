@@ -60,6 +60,7 @@ import type { RunSummaryStats } from "./meta.ts";
 import {
   DIFFICULTY_DEFS,
   STAGE_TOWERS,
+  stageModifier,
   stageTowerIndex,
   type Difficulty,
 } from "./stage.ts";
@@ -151,6 +152,12 @@ export interface Run {
   relicOptions: string[];
   /** 主线关卡(1-based);null = 无尽/每日模式。 */
   stage: number | null;
+  /** 主动技能「定点爆破」充能数(上限 3)。 */
+  skillBlast: number;
+  /** 主动技能「缓时领域」充能数(上限 2)。 */
+  skillSlow: number;
+  /** 缓时领域剩余时间(s),>0 时全局 0.55 倍速。 */
+  fieldSlowT: number;
   /** 关卡难度;stage 为 null 时也是 null。 */
   difficulty: Difficulty | null;
 }
@@ -169,6 +176,9 @@ export function createRun(
     daily,
     stage,
     difficulty,
+    skillBlast: 1,
+    skillSlow: 1,
+    fieldSlowT: 0,
     shop: { ...shop },
     phase: "aim",
     tower: createTower(stageTowerSpec(stage, 0, difficulty), rng),
@@ -233,15 +243,18 @@ function stageTowerSpec(
 ): TowerSpec {
   if (stage == null || difficulty == null) return towerSpec(localIdx);
   const def = DIFFICULTY_DEFS[difficulty];
+  const mod = stageModifier(stage);
   const index = stageTowerIndex(stage, localIdx);
   const base = towerSpec(index);
   return {
     ...base,
     // 关底 Boss:关卡内只在最后一栋出镇站巨楼(无尽/每日仍按全局每 5 栋)。
     isBoss: localIdx === STAGE_TOWERS - 1,
-    hpBase: Math.max(1, Math.round(base.hpBase * def.hpMul)),
-    descendMul: def.descendMul,
+    hpBase: Math.max(1, Math.round(base.hpBase * def.hpMul * (mod?.hpMul ?? 1))),
+    descendMul: def.descendMul * (mod?.descendMul ?? 1),
     kindIndex: index + def.kindShift,
+    goldMul: mod?.goldMul,
+    steelMul: mod?.steelMul,
   };
 }
 
@@ -358,6 +371,7 @@ function destroyBrick(run: Run, brick: BoardBrick): void {
   run.stallT = 0;
   if (brick.kind === "core") {
     run.stats.bossKills += 1;
+    run.skillSlow = Math.min(2, run.skillSlow + 1);
     fx(run, { type: "bosskill" });
   }
   // On-death effects.
@@ -771,6 +785,45 @@ function decayPopups(run: Run, dt: number): void {
 /** Aim the cannon (call from pointer/keyboard input). */
 export function aimRun(run: Run, angle: number): void {
   run.aimAngle = clampAim(angle);
+}
+
+/**
+ * 主动技能「定点爆破」:对存活砖里位置最低的一块引爆炸药,
+ * 重创其半径内的砖群(清残局/救急用)。aim/volley 中可放。
+ */
+export function activateBlastSkill(run: Run): boolean {
+  if (run.phase !== "aim" && run.phase !== "volley") return false;
+  if (run.skillBlast <= 0) return false;
+  let target: BoardBrick | null = null;
+  let targetY = -Infinity;
+  for (const brick of run.tower.bricks) {
+    if (!brick.alive) continue;
+    const y = brick.y + run.tower.offset + brick.h;
+    if (y > targetY) {
+      targetY = y;
+      target = brick;
+    }
+  }
+  if (!target) return false;
+  run.skillBlast -= 1;
+  const cx = target.x + target.w / 2;
+  const cy = target.y + run.tower.offset + target.h / 2;
+  fx(run, { type: "blast", x: cx, y: cy, radius: 130 });
+  for (const other of bricksWithin(run.tower.bricks, cx, cy, 130, run.tower.offset)) {
+    const amount = computeBlastDamage(run.mods, other, other.maxHp * 0.9);
+    damageBrick(run, other, amount);
+  }
+  return true;
+}
+
+/** 主动技能「缓时领域」:4 秒全局 0.55 倍速,给玩家喘息窗口。 */
+export function activateSlowSkill(run: Run): boolean {
+  if (run.phase !== "aim" && run.phase !== "volley") return false;
+  if (run.skillSlow <= 0) return false;
+  run.skillSlow -= 1;
+  run.fieldSlowT = 4;
+  fx(run, { type: "shield" });
+  return true;
 }
 
 /** Fire a volley from the aim state. */

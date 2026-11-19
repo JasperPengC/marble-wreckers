@@ -40,7 +40,34 @@ export function stageTowerIndex(stage: number, localIdx: number): number {
 
 /** 通关奖励(灵石):基础值 × 关卡成长 × 难度倍率。 */
 export function stageClearReward(stage: number, diff: Difficulty): number {
-  return Math.round(200 * Math.pow(1.18, stage - 1) * DIFFICULTY_DEFS[diff].rewardMul);
+  const mod = stageModifier(stage);
+  const modMul = mod ? mod.rewardMul : 1;
+  return Math.round(200 * Math.pow(1.18, stage - 1) * DIFFICULTY_DEFS[diff].rewardMul * modMul);
+}
+
+/** 关卡规则修改器:第 4 关起每 3 关轮换一个,让关卡结构不再同质。 */
+export interface StageModifier {
+  id: string;
+  name: string;
+  desc: string;
+  hpMul: number;
+  descendMul: number;
+  rewardMul: number;
+  goldMul: number;
+  steelMul: number;
+}
+
+export const STAGE_MODIFIERS: StageModifier[] = [
+  { id: "steel-storm", name: "加固风暴", desc: "加固砖数量翻倍", hpMul: 1, descendMul: 1, rewardMul: 1.15, goldMul: 1, steelMul: 2 },
+  { id: "pressure", name: "高层加压", desc: "下沉速度 +15%", hpMul: 1, descendMul: 1.15, rewardMul: 1.15, goldMul: 1, steelMul: 1 },
+  { id: "gold-rush", name: "淘金热", desc: "神帖(高灵石)数量翻倍", hpMul: 1.05, descendMul: 1, rewardMul: 1.3, goldMul: 2, steelMul: 1 },
+  { id: "brittle", name: "脆壳时代", desc: "砖更脆,但下沉 +25%", hpMul: 0.75, descendMul: 1.25, rewardMul: 1.2, goldMul: 1, steelMul: 1 },
+];
+
+/** 前 3 关为纯教学,不挂修改器。 */
+export function stageModifier(stage: number): StageModifier | null {
+  if (stage < 4) return null;
+  return STAGE_MODIFIERS[Math.floor((stage - 4) / 3) % STAGE_MODIFIERS.length];
 }
 
 /** 推荐战力:以困难档为基准的线性成长,简单/地狱做偏移。 */

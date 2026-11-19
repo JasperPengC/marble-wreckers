@@ -7,6 +7,7 @@ import {
   MAX_STAGE,
   DIFFICULTIES,
   stageClearReward,
+  stageModifier,
   stagePowerFor,
   type Difficulty,
 } from "../game/stage.ts";
@@ -83,6 +84,12 @@ export function createStagesScene(shell: SceneShell, t: Translate) {
             "div",
             { class: "stage-card__head" },
             h("b", { class: "stage-card__no" }, unlocked ? `${stage}` : "?"),
+            (() => {
+              const mod = stageModifier(stage);
+              return mod && unlocked
+                ? h("span", { class: "stage-card__mod", title: mod.desc }, mod.name)
+                : null;
+            })(),
             h(
               "span",
               { class: "stage-card__stars" },

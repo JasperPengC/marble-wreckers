@@ -139,6 +139,8 @@ export interface MetaSave {
   lastStage: { stage: number; difficulty: Difficulty } | null;
   /** 任务存档。 */
   quests: QuestSave;
+  /** 新手引导是否完成(首局三步)。 */
+  tutorial: boolean;
   /** Highest tower ordinal reached (0-based) in standard mode. */
   bestTower: number;
   bestScore: number;
@@ -161,6 +163,7 @@ export function emptyMeta(): MetaSave {
     hellClears: 0,
     lastStage: null,
     quests: emptyQuests(),
+    tutorial: false,
     bestTower: -1,
     bestScore: 0,
     totalBricks: 0,
@@ -369,6 +372,7 @@ export function normalizeMeta(raw: unknown): MetaSave {
       meta.lastStage = { stage: Math.floor(ls.stage), difficulty: ls.difficulty };
     }
   }
+  if (src.tutorial === true) meta.tutorial = true;
   if (src.quests && typeof src.quests === "object") {
     const q = src.quests as Record<string, unknown>;
     meta.quests.date = typeof q.date === "string" ? q.date.slice(0, 10) : "";

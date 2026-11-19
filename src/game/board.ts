@@ -61,6 +61,8 @@ export interface TowerSpec {
   hpMul?: number;
   descendMul?: number;
   kindIndex?: number;
+  goldMul?: number;
+  steelMul?: number;
 }
 
 export function towerSpec(index: number): TowerSpec {
@@ -200,7 +202,11 @@ export function createTower(spec: TowerSpec, rng: Rng): Tower {
   const bricks: BoardBrick[] = [];
   let id = spec.index * 1000 + 1;
   const hpBase = spec.hpBase;
-  const weights = kindWeights(spec.kindIndex ?? spec.index);
+  const weights = kindWeights(spec.kindIndex ?? spec.index).map(([kind, weight]) => {
+    if (kind === "gold") return [kind, weight * (spec.goldMul ?? 1)] as [BrickKind, number];
+    if (kind === "steel") return [kind, weight * (spec.steelMul ?? 1)] as [BrickKind, number];
+    return [kind, weight] as [BrickKind, number];
+  });
   for (let row = 0; row < spec.rows; row++) {
     const y = TOWER_TOP + row * ROW_PITCH;
     if (spec.isBoss && row === 0) {
