@@ -54,6 +54,7 @@ export async function launchChrome({
   windowSize = "1280,900",
   initialUrl = "about:blank",
   timeoutMs = 25000,
+  extraArgs = [],
 }) {
   const profileDir = path.join(
     os.tmpdir(),
@@ -77,6 +78,7 @@ export async function launchChrome({
     "--mute-audio",
     "--hide-scrollbars",
     `--window-size=${windowSize}`,
+    ...extraArgs,
     initialUrl,
   ];
 

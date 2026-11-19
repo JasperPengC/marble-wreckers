@@ -17,6 +17,8 @@ if (await probeCdpPort(9341)) throw new Error("CDP 端口 9341 被占用");
 const chrome = await launchChrome({
   port: 9341,
   executablePath: process.env.E2E_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  // Linux CI 环境跑 Chrome 通常需要关沙箱;macOS 本地加它同样可用
+  extraArgs: ["--no-sandbox"],
 });
 try {
   const client = await connectToPage(9341);

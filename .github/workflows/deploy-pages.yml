@@ -1,12 +1,10 @@
-# 部署 GitHub Pages:构建独立 H5 版(dist/web)并发布到 https://jasperpengc.github.io/marble-wreckers/
+# 手动部署 Pages:不发版,把当前构建发布到线上(应急修复/预览用)。
 #
-# 触发纪律:仅 push 到 main + 手动按钮;其余分支/PR 一律不触发。
-# concurrency 去重:同组已有任务时取消旧的,连续 push 也绝不重复部署。
+# 触发纪律:纯 push 不触发,只有仓库写权限的人手动点按钮才跑。
+# 发版请走 release.yml(推 v* tag,一次完成部署+发版)。
 name: Deploy Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -35,8 +33,6 @@ jobs:
       - name: 安装依赖(锁定 lockfile)
         run: bun install --frozen-lockfile
 
-      # 门禁:类型 + 架构约束 + 单元测试(不依赖浏览器,CI 上确定性 100%;
-      # 浏览器 e2e 在本地对构建产物跑,见 scripts/smoke-static.mjs)
       - name: 门禁(typecheck + arch + 单测)
         run: bun run typecheck && bun run arch && bun test test
 

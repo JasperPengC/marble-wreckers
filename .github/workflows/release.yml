@@ -1,7 +1,7 @@
-# 发版:推 v* tag 时构建产物并发布 GitHub Release。
+# 发版:推 v* tag 时一次性完成——门禁 → 构建 → 静态烟雾测试 → 部署 Pages → 创建 Release。
 #
-# 触发纪律:仅 v* tag 推送,不挂在任何分支 push 上,避免多余 CI。
-# 产物:H5 站点 zip + linux.do 快应用包 zip。
+# 触发纪律:纯 push 到 main 不触发任何 CI;只有发版(打 tag)才跑这一次。
+# 线上站点(github.io)永远展示已发版的构建,与 Release 口径一致。
 name: Release
 
 on:
@@ -14,25 +14,62 @@ concurrency:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
         with:
+          # 锁死与本地一致的版本,保证 CI 与本地行为可复现
           bun-version: 1.4.4
 
       - name: 安装依赖(锁定 lockfile)
         run: bun install --frozen-lockfile
 
+      # 门禁:类型 + 架构约束 + 单元测试(不依赖浏览器,确定性 100%)
       - name: 门禁(typecheck + arch + 单测)
         run: bun run typecheck && bun run arch && bun test test
 
       - name: 构建 H5 与快应用包
         run: bun run build:h5 && bun run build:miniapp
+
+      - name: 产物完整性校验
+        run: |
+          test -f dist/web/index.html
+          test -f dist/web/app.js
+          test -f dist/web/app.css
+          test -f dist/package/app.zip
+          ! grep -qE 'src="/|href="/' dist/web/index.html
+
+      # 部署前最后一道实测:把构建产物挂在 /marble-wreckers/ 子路径下
+      # (等价 github.io 的真实路径形态),无头 Chrome 实测游戏可玩。
+      - name: 静态烟雾测试(无头 Chrome)
+        run: |
+          mkdir -p /tmp/pages-sim
+          ln -s "$PWD/dist/web" /tmp/pages-sim/marble-wreckers
+          python3 -m http.server 8199 -d /tmp/pages-sim &
+          SERVER_PID=$!
+          sleep 1
+          E2E_CHROME=/usr/bin/google-chrome node scripts/smoke-static.mjs /tmp/pages-sim /marble-wreckers/ 8199
+          STATUS=$?
+          kill $SERVER_PID || true
+          exit $STATUS
+
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: 打包附件
         run: |
@@ -41,7 +78,7 @@ jobs:
           cp dist/package/app.zip "marble-wreckers-miniapp-v${VERSION}.zip"
           ls -la marble-wreckers-*.zip
 
-      - name: 发布 GitHub Release
+      - name: 创建 GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
