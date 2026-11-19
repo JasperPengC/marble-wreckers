@@ -43,6 +43,11 @@ export function createTutorial(app: HTMLElement, options: TutorialOptions): Tuto
   const onPointerUp = (): void => {
     if (step === 1) advance();
   };
+  // 键盘玩家(←→ + 空格)没有 pointer 事件,否则气泡会挂满整局、叠到三选一上
+  const onKeyDown = (event: KeyboardEvent): void => {
+    if (event.code !== "Space" && event.code !== "Enter") return;
+    if (step === 0 || step === 1) advance();
+  };
 
   function advance(): void {
     step += 1;
@@ -77,12 +82,14 @@ export function createTutorial(app: HTMLElement, options: TutorialOptions): Tuto
     if (disposed) return;
     disposed = true;
     window.removeEventListener("tower-cleared", onTowerCleared);
+    window.removeEventListener("keydown", onKeyDown);
     layer.remove();
     options.onFinish();
   }
 
   window.addEventListener("pointerdown", onPointerDown, { passive: true });
   window.addEventListener("pointerup", onPointerUp, { passive: true });
+  window.addEventListener("keydown", onKeyDown);
   app.append(layer);
 
   return {

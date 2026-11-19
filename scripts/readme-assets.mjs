@@ -57,6 +57,9 @@ async function capture(theme) {
   })()`);
   await sleep(2300); // 等实际的楼栋提示退出，截图不遮挡弹道。
   const battle = (await client.send("Page.captureScreenshot", { format: "png" })).data;
+  // 三选一截图前先收掉新手引导:脚本走 __fire 不产生真实 pointer 事件,
+  // 引导气泡会停在第一步并叠到强化面板上(实机键盘玩家同理,已另行修复)。
+  await client.evaluate("document.querySelector('.tutorial-skip')?.click()");
   await client.evaluate("window.__win(); window.__step(90); window.__readmeFrame()");
   await waitFor("document.querySelectorAll('#overlay .card').length === 3");
   const draft = (await client.send("Page.captureScreenshot", { format: "png" })).data;
